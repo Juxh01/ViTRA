@@ -19,7 +19,7 @@ keywords = [
 dependencies = [
     "numpy",
     "torch",
-    "tqdm",
+    "torchvision",
     "matplotlib",
     "hydra-core",
     "hydra-joblib-launcher",
@@ -30,6 +30,7 @@ dependencies = [
     "scipy",
     "transformers",
     "wandb",
+    "detonation",
 ]
 
 [project.optional-dependencies]
