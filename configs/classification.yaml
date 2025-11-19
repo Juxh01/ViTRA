@@ -1,6 +1,10 @@
+name: CiFAR-100-ViT-B-Pretrained
+description: Classification on CiFAR-100 using pretrained ViT-B model
 general:
   seed: 10
   backbone_name: "google/vit-base-patch16-224" # or None for random initialization
+  wandb_project: "ViTRA"
+  experiment_name: ${name}
 
 
 optimizer:
@@ -9,10 +13,11 @@ optimizer:
   lr_gamma: 0.9
   optimizer_str: "sgd"
   batch_size_per_device: 64
+  epochs: 10
 
   # Replicator settings
-  replicate_every: 2
-  skip_every: 0
+  replicate_every: 1
+  skip_every: None
   shards: 2
   repl: "deto-demo"
   # Demo
