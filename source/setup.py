@@ -122,9 +122,9 @@ def setup_distributed_training(
     return optimizer, scheduler
 
 
-def setup_classification(
-    batch_size: int, seed: int, device: str, config: Dict[str, Any]
-):
+def setup_classification(device: str, config: Dict[str, Any]):
+    batch_size = config["optimizer"]["batch_size_per_device"]
+    seed = config["general"]["seed"]
     set_seed(seed)
 
     vit_base_config = ViTConfig(
@@ -191,12 +191,14 @@ def setup_classification(
         download=True,
         transform=train_transforms,
     )
+    train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
     val_dataset = datasets.CIFAR100(
         root="./data",
         train=False,
         download=True,
         transform=val_transforms,
     )
+    val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
 
     train_sampler = DistributedSampler(train_dataset, shuffle=True)
     val_sampler = DistributedSampler(val_dataset, shuffle=False)
@@ -231,7 +233,9 @@ def setup_classification(
     return model, train_loader, val_loader, train_sampler, optimizer, scheduler
 
 
-def setup_segmentation(batch_size: int, seed: int, device: str, config: Dict[str, Any]):
+def setup_segmentation(device: str, config: Dict[str, Any]):
+    batch_size = config["optimizer"]["batch_size_per_device"]
+    seed = config["general"]["seed"]
     set_seed(seed)
 
     dpt_base_config = DPTConfig(
