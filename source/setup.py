@@ -63,6 +63,7 @@ def setup_distributed_training(
     # Initialize the process group for distributed training
     if not dist.is_initialized():
         dist.init_process_group(backend="nccl")
+        print("Initialized the distributed process group.")
 
     # Set the device for the current process
     if device == "cuda":
