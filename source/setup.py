@@ -120,7 +120,7 @@ def setup_distributed_training(
         param_group["lr"] = optim_config["lr"]
     scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
 
-    return optimizer, scheduler
+    return model, optimizer, scheduler
 
 
 def setup_classification(device: str, config: Dict[str, Any]):
@@ -245,7 +245,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
         shuffle=False,
     )
 
-    optimizer, scheduler = setup_distributed_training(
+    model, optimizer, scheduler = setup_distributed_training(
         model=model,
         transformer_layer_cls={ViTLayer},
         seed=seed,
@@ -406,7 +406,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         ),  # TODO: dynamic value?
         shuffle=False,
     )
-    optimizer, scheduler = setup_distributed_training(
+    model, optimizer, scheduler = setup_distributed_training(
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
