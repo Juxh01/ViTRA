@@ -108,11 +108,6 @@ def train(
                 )
                 loss = outputs.loss
                 loss.backward()
-            for name, param in model.named_parameters():
-                if param.requires_grad is False:
-                    print(f"Gefroren (Frozen): {name}")
-                elif param.grad is None:
-                    print(f"Unbenutzt (Unused): {name}")
             optimizer.step()
 
             # Update loss and metrics
