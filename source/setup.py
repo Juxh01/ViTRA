@@ -245,7 +245,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
 
     optimizer, scheduler = setup_distributed_training(
         model=model,
-        transformer_layer_cls=ViTLayer,
+        transformer_layer_cls={ViTLayer},
         seed=seed,
         config=config,
     )
