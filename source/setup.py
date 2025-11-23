@@ -167,6 +167,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
         [
             T.RandomResizedCrop(size=(224, 224), scale=(0.5, 2.0)),
             T.RandomHorizontalFlip(),
+            T.ToImage(),
             T.ToDtype(
                 dtype={
                     tv_tensors.Image: torch.float32,
@@ -180,6 +181,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
     val_transforms = T.Compose(
         [
             T.Resize(size=(224, 224)),
+            T.ToImage(),
             T.ToDtype(
                 dtype={
                     tv_tensors.Image: torch.float32,
@@ -321,6 +323,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         [
             T.RandomResizedCrop(size=(384, 384), scale=(0.5, 2.0)),
             T.RandomHorizontalFlip(),
+            T.ToImage(),
             T.ToDtype(
                 dtype={
                     tv_tensors.Image: torch.float32,
@@ -335,6 +338,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     val_transforms = T.Compose(
         [
             T.Resize(size=(384, 384)),
+            T.ToImage(),
             T.ToDtype(
                 dtype={
                     tv_tensors.Image: torch.float32,
