@@ -99,6 +99,8 @@ def train(
         ):
             inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
+            if task == "segmentation" and targets.dim() == 4:
+                targets = targets.squeeze(1)
             with model.no_sync():
                 outputs = model(
                     inputs,
@@ -135,6 +137,8 @@ def train(
                 ncols=150,
             ):
                 inputs, targets = inputs.to(device), targets.to(device)
+                if task == "segmentation" and targets.dim() == 4:
+                    targets = targets.squeeze(1)
                 outputs = model(
                     inputs,
                     labels=targets,
