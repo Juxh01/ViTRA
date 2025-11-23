@@ -58,7 +58,7 @@ def train(
                 loss.backward()
             optimizer.step()
             # Accumulate loss and correct predictions
-            train_loss_sample[0] += loss.item()
+            train_loss_sample[0] += loss.item() * inputs.size(0)
             train_loss_sample[1] += inputs.size(0)
             _, predicted = outputs.logits.max(1)
             train_correct += predicted.eq(targets).sum().item()
@@ -92,7 +92,7 @@ def train(
                 )
                 loss = outputs.loss
                 # Accumulate loss and correct predictions
-                val_loss_sample[0] += loss.item()
+                val_loss_sample[0] += loss.item() * inputs.size(0)
                 val_loss_sample[1] += inputs.size(0)
                 _, predicted = outputs.logits.max(1)
                 val_correct += predicted.eq(targets).sum().item()

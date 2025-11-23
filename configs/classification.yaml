@@ -10,7 +10,7 @@ general:
 
 optimizer:
   # Optimizer settings
-  lr: 0.01
+  lr: 3e-4
   lr_gamma: 0.9
   optimizer_str: "sgd"
   batch_size_per_device: 256
