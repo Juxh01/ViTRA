@@ -18,7 +18,7 @@ optimizer:
 
   # Replicator settings
   replicate_every: 1
-  skip_every: None
+  skip_every: null
   shards: 2
   repl: "deto-demo"
   # Demo
