@@ -4,7 +4,41 @@ import os
 
 import torch
 from torch import distributed as dist
+from torchmetrics import MeanMetric, MetricCollection
+from torchmetrics.classification import (
+    MulticlassAccuracy,
+    MulticlassAUROC,
+    MulticlassF1Score,
+)
+from torchmetrics.segmentation import DiceScore, MeanIoU
 from tqdm import tqdm
+
+
+def get_metrics(task: str, device: str):
+    if task == "classification":
+        metrics = MetricCollection(
+            {
+                "acc": MulticlassAccuracy(num_classes=100),
+                "acc_top5": MulticlassAccuracy(num_classes=100, top_k=5),
+                "f1": MulticlassF1Score(num_classes=100, average="macro"),
+                "auc": MulticlassAUROC(num_classes=100, average="macro"),
+            }
+        )
+    elif task == "segmentation":
+        metrics = MetricCollection(
+            {
+                "mIoU": MeanIoU(num_classes=21, ignore_index=255),
+                "dice": DiceScore(num_classes=21, ignore_index=255, average="macro"),
+                # "hd95": HausdorffDistance(num_classes=21, ignore_index=255),
+            }
+        )
+    else:
+        metrics = None
+        raise ValueError(f"Unsupported task: {task}")
+
+    train_metrics = metrics.clone(prefix="train/").to(device)
+    val_metrics = metrics.clone(prefix="val/").to(device)
+    return train_metrics, val_metrics
 
 
 def train(
@@ -32,13 +66,22 @@ def train(
     """
     rank = int(os.environ["RANK"])
     num_epochs = config["optimizer"]["epochs"]
+    task = config["general"]["task"]
+
+    train_metrics, val_metrics = get_metrics(task, device)
+    train_loss_metric = MeanMetric().to(device)
+    val_loss_metric = MeanMetric().to(device)
 
     for epoch in range(1, num_epochs + 1):
         ### Training loop ###
-        train_correct = 0
         model.train()
         train_sampler.set_epoch(epoch)
-        train_loss_sample = torch.zeros(2).to(device)
+        # Reset metrics and loss
+        train_metrics.reset()
+        train_loss_metric.reset()
+
+        val_metrics.reset()
+        val_loss_metric.reset()
 
         for inputs, targets in tqdm(
             train_loader,
@@ -57,26 +100,25 @@ def train(
                 loss = outputs.loss
                 loss.backward()
             optimizer.step()
-            # Accumulate loss and correct predictions
-            train_loss_sample[0] += loss.item() * inputs.size(0)
-            train_loss_sample[1] += inputs.size(0)
-            _, predicted = outputs.logits.max(1)
-            train_correct += predicted.eq(targets).sum().item()
 
-        # Calculate train metrics across all processes
-        train_correct_tensor = torch.tensor(train_correct).to(device)
-        dist.all_reduce(train_correct_tensor, op=dist.ReduceOp.SUM)
-        dist.all_reduce(train_loss_sample, op=dist.ReduceOp.SUM)
-        if rank == 0:
-            global_total = train_loss_sample[1].item()
-            avg_train_loss = train_loss_sample[0] / global_total
-            avg_train_acc = 100.0 * train_correct_tensor.item() / global_total
+            # Update loss and metrics
+            train_loss_metric.update(value=loss.item(), weight=inputs.size(0))
+            preds = outputs.logits
+            if task == "segmentation":
+                # Für Seg müssen wir oft interpolieren, da Output kleiner als Input sein kann
+                if preds.shape[-2:] != targets.shape[-2:]:
+                    preds = torch.nn.functional.interpolate(
+                        preds,
+                        size=targets.shape[-2:],
+                        mode="bilinear",
+                        align_corners=False,
+                    )
+
+            train_metrics.update(preds, targets)
 
         ### Validation loop ###
-        val_correct = 0
         with torch.no_grad():
             model.eval()
-            val_loss_sample = torch.zeros(2).to(device)
 
             for inputs, targets in tqdm(
                 val_loader,
@@ -91,37 +133,41 @@ def train(
                     labels=targets,
                 )
                 loss = outputs.loss
-                # Accumulate loss and correct predictions
-                val_loss_sample[0] += loss.item() * inputs.size(0)
-                val_loss_sample[1] += inputs.size(0)
-                _, predicted = outputs.logits.max(1)
-                val_correct += predicted.eq(targets).sum().item()
+                # Metrics Update
+                val_loss_metric.update(loss, weight=inputs.size(0))
 
-        # Calculate val metrics across all processes
-        val_correct_tensor = torch.tensor(val_correct).to(device)
-        dist.all_reduce(val_correct_tensor, op=dist.ReduceOp.SUM)
-        dist.all_reduce(val_loss_sample, op=dist.ReduceOp.SUM)
+                preds = outputs.logits
+                if task == "segmentation":
+                    if preds.shape[-2:] != targets.shape[-2:]:
+                        preds = torch.nn.functional.interpolate(
+                            preds,
+                            size=targets.shape[-2:],
+                            mode="bilinear",
+                            align_corners=False,
+                        )
+
+                val_metrics.update(preds, targets)
+
+        # Compute loss and metrics across all processes
+        train_loss = train_loss_metric.compute().item()
+        val_loss = val_loss_metric.compute().item()
+        train_metrics_dict = train_metrics.compute()
+        val_metrics_dict = val_metrics.compute()
+
         if rank == 0:
-            global_total = val_loss_sample[1].item()
-            avg_val_loss = val_loss_sample[0] / global_total
-            avg_val_acc = 100.0 * val_correct_tensor.item() / global_total
             print(
                 f"Epoch {epoch}/{num_epochs}, "
-                f"Train Loss: {avg_train_loss:.4f}, "
-                f"Train Acc: {avg_train_acc:.2f}%, "
-                f"Val Loss: {avg_val_loss:.4f}, "
-                f"Val Acc: {avg_val_acc:.2f}%"
+                f"Train Loss: {train_loss:.4f}, "
+                f"Val Loss: {val_loss:.4f}, "
             )
-            run.log(
-                {
-                    "epoch": epoch,
-                    "train/loss": avg_train_loss,
-                    "train/accuracy": avg_train_acc,
-                    "val/loss": avg_val_loss,
-                    "val/accuracy": avg_val_acc,
-                    "learning_rate": scheduler.get_last_lr()[0],
-                }
-            )
+            results_dict = {
+                "epoch": epoch,
+                "train_loss": train_loss,
+                "val_loss": val_loss,
+            }
+            results_dict.update({k: v.item() for k, v in train_metrics_dict.items()})
+            results_dict.update({k: v.item() for k, v in val_metrics_dict.items()})
+            run.log(results_dict)
         scheduler.step()
     if rank == 0:
         run.finish()

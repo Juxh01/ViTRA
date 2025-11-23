@@ -5,6 +5,7 @@ general:
   backbone_name: "google/vit-base-patch16-224" # or None for random initialization
   wandb_project: "ViTRA"
   experiment_name: ${name}
+  task: "classification"
   data_dir: "${hydra:runtime.cwd}/data"
 
 

@@ -33,6 +33,7 @@ dependencies = [
     "detonation",
     "mltiming", #for detonation
     "tqdm",
+    "torchmetrics",
 ]
 
 [project.optional-dependencies]
