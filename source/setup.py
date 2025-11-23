@@ -34,7 +34,6 @@ from transformers import (
 )
 from transformers.models.dpt.modeling_dpt import (
     DPTAuxiliaryHead,
-    DPTPreActResidualLayer,
     DPTReassembleLayer,
     DPTSemanticSegmentationHead,
     DPTViTLayer,
@@ -410,7 +409,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             DPTViTLayer,
             # DPTFeatureFusionLayer, # DeToNATION fails here due to weights with no grad
             DPTAuxiliaryHead,
-            DPTPreActResidualLayer,
+            # DPTPreActResidualLayer, # DeToNATION fails here due to weights with no grad
             DPTReassembleLayer,
             DPTSemanticSegmentationHead,
         ),
