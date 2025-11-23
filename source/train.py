@@ -10,7 +10,7 @@ from torchmetrics.classification import (
     MulticlassAUROC,
     MulticlassF1Score,
 )
-from torchmetrics.segmentation import DiceScore, MeanIoU
+from torchmetrics.segmentation import DiceScore, HausdorffDistance, MeanIoU
 from tqdm import tqdm
 
 
@@ -38,6 +38,12 @@ def get_metrics(task: str, device: str):
 
     train_metrics = metrics.clone(prefix="train/").to(device)
     val_metrics = metrics.clone(prefix="val/").to(device)
+    if task == "segmentation":
+        val_metrics.add_metrics(
+            {
+                "val/hd95": HausdorffDistance(num_classes=21, ignore_index=255),
+            }
+        )
     return train_metrics, val_metrics
 
 
