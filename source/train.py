@@ -27,7 +27,7 @@ def get_metrics(task: str, device: str):
     elif task == "segmentation":
         metrics = MetricCollection(
             {
-                "mIoU": MeanIoU(num_classes=21, ignore_index=255),
+                "mIoU": MeanIoU(num_classes=21),
                 "dice": DiceScore(num_classes=21, ignore_index=255, average="macro"),
                 # "hd95": HausdorffDistance(num_classes=21, ignore_index=255),
             }
