@@ -356,13 +356,13 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             root=data_dir,
             year="2012",
             image_set="train",
-            download=True,
+            download=False,
         )
         datasets.VOCSegmentation(
             root=data_dir,
             year="2012",
             image_set="val",
-            download=True,
+            download=False,
         )
 
     dist.barrier()  # Ensure that only one process downloads the dataset
@@ -371,16 +371,16 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         root=data_dir,
         year="2012",
         image_set="train",
-        download=True,
-        transform=train_transforms,
+        download=False,
+        transforms=train_transforms,
     )
     train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
     val_dataset = datasets.VOCSegmentation(
         root=data_dir,
         year="2012",
         image_set="val",
-        download=True,
-        transform=val_transforms,
+        download=False,
+        transforms=val_transforms,
     )
     val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
 
