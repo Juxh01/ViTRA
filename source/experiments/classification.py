@@ -9,7 +9,9 @@ from source.setup import setup_classification
 from source.train import train
 
 
-@hydra.main(config_path="./configs", config_name="classification", version_base="1.1")
+@hydra.main(
+    config_path="../../configs", config_name="classification", version_base="1.1"
+)
 def main(cfg: DictConfig) -> None:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     config_dict = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
