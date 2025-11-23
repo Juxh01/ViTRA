@@ -21,7 +21,7 @@ from torch.distributed.fsdp import (
     MixedPrecision,
 )
 from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import LinearLR, PolynomialLR, StepLR
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torchvision import datasets, tv_tensors
@@ -115,8 +115,33 @@ def setup_distributed_training(
     optim = optimizer._optimizer if hasattr(optimizer, "_optimizer") else optimizer
     for param_group in optim.param_groups:
         param_group["lr"] = optim_config["lr"]
-    scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
 
+    # Setup learning rate scheduler
+    task = config["general"]["task"]
+    if task == "classification":
+        scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
+    elif task == "segmentation":
+        total_epochs = optim_config["epochs"]
+        warmup_epochs = optim_config.get("warmup_epochs", 0)
+        main_scheduler = PolynomialLR(
+            optim,
+            total_iters=total_epochs - warmup_epochs,
+            power=0.9,
+            last_epoch=-1,
+        )
+        warmup_scheduler = LinearLR(
+            optim,
+            start_factor=0.001,
+            end_factor=1.0,
+            total_iters=warmup_epochs,
+        )
+        scheduler = torch.optim.lr_scheduler.SequentialLR(
+            optim,
+            schedulers=[warmup_scheduler, main_scheduler],
+            milestones=[warmup_epochs],
+        )
+    else:
+        raise ValueError(f"Unknown task: {task}")
     return model, optimizer, scheduler
 
 
@@ -318,8 +343,14 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
 
     train_transforms = T.Compose(
         [
+            T.RandomRotation(degrees=(-15, 15)),
             T.RandomResizedCrop(size=(384, 384), scale=(0.5, 2.0)),
             T.RandomHorizontalFlip(),
+            T.RandomGrayscale(p=0.2),
+            T.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),
+            T.RandomApply(
+                [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5.0))], p=0.2
+            ),
             T.ToImage(),
             T.ToDtype(
                 dtype={
