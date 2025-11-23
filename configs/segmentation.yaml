@@ -11,8 +11,9 @@ general:
 
 optimizer:
   # Optimizer settings
-  lr: 1e-4
-  lr_gamma: 0.95
+  lr: 1e-3
+  lr_power: 0.9
+  momentum: 0.99
   optimizer_str: "sgd"
   batch_size_per_device: 32
   warumup_epochs: 5

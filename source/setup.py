@@ -111,6 +111,7 @@ def setup_distributed_training(
         replicate_every=optim_config["replicate_every"],
         skip_every=optim_config["skip_every"],
         sharding_group_size=optim_config["shards"],
+        momentum=optim_config["momentum"],
     )
     optim = optimizer._optimizer if hasattr(optimizer, "_optimizer") else optimizer
     for param_group in optim.param_groups:
@@ -126,7 +127,7 @@ def setup_distributed_training(
         main_scheduler = PolynomialLR(
             optim,
             total_iters=total_epochs - warmup_epochs,
-            power=0.9,
+            power=optim_config["lr_power"],
             last_epoch=-1,
         )
         warmup_scheduler = LinearLR(

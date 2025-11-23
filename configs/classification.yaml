@@ -13,6 +13,7 @@ optimizer:
   # Optimizer settings
   lr: 1e-5
   lr_gamma: 0.9
+  momentum: 0.99
   optimizer_str: "sgd"
   batch_size_per_device: 256
   epochs: 10
