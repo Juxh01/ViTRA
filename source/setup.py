@@ -33,10 +33,6 @@ from transformers import (
     ViTForImageClassification,
 )
 from transformers.models.dpt.modeling_dpt import (
-    DPTAuxiliaryHead,
-    DPTFeatureFusionLayer,
-    DPTPreActResidualLayer,
-    DPTReassembleLayer,
     DPTSemanticSegmentationHead,
     DPTViTLayer,
 )
@@ -409,10 +405,10 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
-            DPTFeatureFusionLayer,
-            DPTAuxiliaryHead,
-            DPTPreActResidualLayer,
-            DPTReassembleLayer,
+            # DPTFeatureFusionLayer,
+            # DPTAuxiliaryHead,
+            # DPTPreActResidualLayer,
+            # DPTReassembleLayer,
             DPTSemanticSegmentationHead,
         ),
         seed=seed,
