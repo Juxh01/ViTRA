@@ -85,6 +85,7 @@ def train(
                 colour="green",
                 ncols=150,
             ):
+                inputs, targets = inputs.to(device), targets.to(device)
                 outputs = model(
                     inputs,
                     labels=targets,
