@@ -10,7 +10,7 @@ general:
 
 optimizer:
   # Optimizer settings
-  lr: 3e-4
+  lr: 1e-5
   lr_gamma: 0.9
   optimizer_str: "sgd"
   batch_size_per_device: 256
@@ -22,7 +22,7 @@ optimizer:
   shards: 2
   repl: "deto-demo"
   # Demo
-  compression_topk: 16
+  compression_topk: 8
   compression_chunk: 64
   # Random
   compression_rate: None
