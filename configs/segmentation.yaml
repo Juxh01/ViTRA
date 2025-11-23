@@ -2,7 +2,7 @@ name: PASCAL-VOC-2012-ViT-B-Pretrained
 description: Semantic Segmentation on PASCAL VOC 2012 using pretrained ViT-B model
 general:
   seed: 10
-  backbone_name: "google/vit-base-patch16-224" # or None for random initialization
+  backbone_name: "google/vit-base-patch16-384" # or None for random initialization
   wandb_project: "ViTRA"
   experiment_name: ${name}
   task: "segmentation"
