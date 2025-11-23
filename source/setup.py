@@ -53,22 +53,22 @@ def set_seed(seed: int):
         torch.mps.manual_seed(seed)
 
 
-def setup_distributed_training(
-    device: str,
-    model,
-    transformer_layer_cls,
-    seed: int,
-    config: Dict[str, Any],
-):
+def setup_process_group(device: str):
     # Initialize the process group for distributed training
     if not dist.is_initialized():
         dist.init_process_group(backend="nccl")
-        print("Initialized the distributed process group.")
 
     # Set the device for the current process
     if device == "cuda":
         torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
 
+
+def setup_distributed_training(
+    model,
+    transformer_layer_cls,
+    seed: int,
+    config: Dict[str, Any],
+):
     optim_config = config["optimizer"]
 
     auto_wrap_policy = functools.partial(
@@ -124,9 +124,14 @@ def setup_distributed_training(
 
 
 def setup_classification(device: str, config: Dict[str, Any]):
+    setup_process_group(device)
     batch_size = config["optimizer"]["batch_size_per_device"]
     seed = config["general"]["seed"]
     set_seed(seed)
+
+    # Get rank
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    data_dir = config["general"].get("data_dir", "./data")
 
     vit_base_config = ViTConfig(
         hidden_size=768,
@@ -186,15 +191,30 @@ def setup_classification(device: str, config: Dict[str, Any]):
         ]
     )
 
+    if local_rank == 0:
+        print("Downloading CIFAR100 dataset...")
+        datasets.CIFAR100(
+            root=data_dir,
+            train=True,
+            download=True,
+        )
+        datasets.CIFAR100(
+            root=data_dir,
+            train=False,
+            download=True,
+        )
+
+    dist.barrier()  # Ensure that only one process downloads the dataset
+
     train_dataset = datasets.CIFAR100(
-        root="./data",
+        root=data_dir,
         train=True,
         download=True,
         transform=train_transforms,
     )
     train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
     val_dataset = datasets.CIFAR100(
-        root="./data",
+        root=data_dir,
         train=False,
         download=True,
         transform=val_transforms,
@@ -224,7 +244,6 @@ def setup_classification(device: str, config: Dict[str, Any]):
     )
 
     optimizer, scheduler = setup_distributed_training(
-        device=device,
         model=model,
         transformer_layer_cls=ViTLayer,
         seed=seed,
@@ -235,9 +254,14 @@ def setup_classification(device: str, config: Dict[str, Any]):
 
 
 def setup_segmentation(device: str, config: Dict[str, Any]):
+    setup_process_group(device)
     batch_size = config["optimizer"]["batch_size_per_device"]
     seed = config["general"]["seed"]
     set_seed(seed)
+
+    # Get rank
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    data_dir = config["general"].get("data_dir", "./data")
 
     dpt_base_config = DPTConfig(
         # --- ViT-Base Configuration (mostly default) ---
@@ -323,8 +347,25 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         ],
     )
 
+    if local_rank == 0:
+        print("Downloading VOCSegmentation dataset...")
+        datasets.VOCSegmentation(
+            root=data_dir,
+            year="2012",
+            image_set="train",
+            download=True,
+        )
+        datasets.VOCSegmentation(
+            root=data_dir,
+            year="2012",
+            image_set="val",
+            download=True,
+        )
+
+    dist.barrier()  # Ensure that only one process downloads the dataset
+
     train_dataset = datasets.VOCSegmentation(
-        root="./data",
+        root=data_dir,
         year="2012",
         image_set="train",
         download=True,
@@ -332,7 +373,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     )
     train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
     val_dataset = datasets.VOCSegmentation(
-        root="./data",
+        root=data_dir,
         year="2012",
         image_set="val",
         download=True,
@@ -362,7 +403,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         shuffle=False,
     )
     optimizer, scheduler = setup_distributed_training(
-        device=device,
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
