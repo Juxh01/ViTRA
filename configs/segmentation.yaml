@@ -1,0 +1,31 @@
+name: PASCAL-VOC-2012-ViT-B-Pretrained
+description: Semantic Segmentation on PASCAL VOC 2012 using pretrained ViT-B model
+general:
+  seed: 10
+  backbone_name: "google/vit-base-patch16-224" # or None for random initialization
+  wandb_project: "ViTRA"
+  experiment_name: ${name}
+  task: "segmentation"
+  data_dir: "${hydra:runtime.cwd}/data"
+
+
+optimizer:
+  # Optimizer settings
+  lr: 1e-5
+  lr_gamma: 0.9
+  optimizer_str: "sgd"
+  batch_size_per_device: 128
+  epochs: 10
+
+  # Replicator settings
+  replicate_every: 1
+  skip_every: null
+  shards: 2
+  repl: "deto-demo"
+  # Demo
+  compression_topk: 8
+  compression_chunk: 64
+  # Random
+  compression_rate: None
+  
+  
