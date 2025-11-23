@@ -408,7 +408,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
-            # DPTFeatureFusionLayer,
+            # DPTFeatureFusionLayer, # DeToNATION fails here due to weights with no grad
             DPTAuxiliaryHead,
             DPTPreActResidualLayer,
             DPTReassembleLayer,
