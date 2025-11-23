@@ -47,6 +47,7 @@ def train(
             colour="blue",
             ncols=150,
         ):
+            inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
             with model.no_sync():
                 outputs = model(
