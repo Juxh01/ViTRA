@@ -54,13 +54,12 @@ def set_seed(seed: int):
 
 
 def setup_process_group(device: str):
-    # Initialize the process group for distributed training
-    if not dist.is_initialized():
-        dist.init_process_group(backend="nccl")
-
     # Set the device for the current process
     if device == "cuda":
         torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
+    # Initialize the process group for distributed training
+    if not dist.is_initialized():
+        dist.init_process_group(backend="nccl")
 
 
 def setup_distributed_training(

@@ -162,8 +162,8 @@ def train(
             )
             results_dict = {
                 "epoch": epoch,
-                "train_loss": train_loss,
-                "val_loss": val_loss,
+                "train/loss": train_loss,
+                "val/loss": val_loss,
             }
             results_dict.update({k: v.item() for k, v in train_metrics_dict.items()})
             results_dict.update({k: v.item() for k, v in val_metrics_dict.items()})
