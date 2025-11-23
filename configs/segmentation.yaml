@@ -14,7 +14,7 @@ optimizer:
   lr: 1e-5
   lr_gamma: 0.9
   optimizer_str: "sgd"
-  batch_size_per_device: 64
+  batch_size_per_device: 32
   epochs: 10
 
   # Replicator settings
