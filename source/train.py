@@ -173,6 +173,7 @@ def train(
             )
             results_dict = {
                 "epoch": epoch,
+                "lr": scheduler.get_last_lr()[0],
                 "train/loss": train_loss,
                 "val/loss": val_loss,
             }
