@@ -123,7 +123,7 @@ def setup_distributed_training(
         scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
     elif task == "segmentation":
         total_epochs = optim_config["epochs"]
-        warmup_epochs = optim_config.get("warmup_epochs", 0)
+        warmup_epochs = optim_config["warmup_epochs"]
         main_scheduler = PolynomialLR(
             optim,
             total_iters=total_epochs - warmup_epochs,
