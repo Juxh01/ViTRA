@@ -61,6 +61,36 @@ def setup_process_group(device: str):
         dist.init_process_group(backend="nccl")
 
 
+def steup_lr_scheduler(optim, config: Dict[str, Any]):
+    optim_config = config["optimizer"]
+    task = config["general"]["task"]
+    if task == "classification":
+        scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
+    elif task == "segmentation":
+        total_epochs = optim_config["epochs"]
+        warmup_epochs = optim_config["warmup_epochs"]
+        main_scheduler = PolynomialLR(
+            optim,
+            total_iters=total_epochs - warmup_epochs,
+            power=optim_config["lr_power"],
+            last_epoch=-1,
+        )
+        warmup_scheduler = LinearLR(
+            optim,
+            start_factor=0.001,
+            end_factor=1.0,
+            total_iters=warmup_epochs,
+        )
+        scheduler = torch.optim.lr_scheduler.SequentialLR(
+            optim,
+            schedulers=[warmup_scheduler, main_scheduler],
+            milestones=[warmup_epochs],
+        )
+    else:
+        raise ValueError(f"Unknown task: {task}")
+    return scheduler
+
+
 def setup_distributed_training(
     model,
     transformer_layer_cls,
@@ -118,33 +148,7 @@ def setup_distributed_training(
     for param_group in optim.param_groups:
         param_group["lr"] = optim_config["lr"]
 
-    # Setup learning rate scheduler
-    task = config["general"]["task"]
-    if task == "classification":
-        scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
-    elif task == "segmentation":
-        total_epochs = optim_config["epochs"]
-        warmup_epochs = optim_config["warmup_epochs"]
-        main_scheduler = PolynomialLR(
-            optim,
-            total_iters=total_epochs - warmup_epochs,
-            power=optim_config["lr_power"],
-            last_epoch=-1,
-        )
-        warmup_scheduler = LinearLR(
-            optim,
-            start_factor=0.001,
-            end_factor=1.0,
-            total_iters=warmup_epochs,
-        )
-        scheduler = torch.optim.lr_scheduler.SequentialLR(
-            optim,
-            schedulers=[warmup_scheduler, main_scheduler],
-            milestones=[warmup_epochs],
-        )
-    else:
-        raise ValueError(f"Unknown task: {task}")
-    return model, optimizer, scheduler
+    return model, optimizer
 
 
 def setup_classification(device: str, config: Dict[str, Any]):
@@ -269,12 +273,13 @@ def setup_classification(device: str, config: Dict[str, Any]):
         shuffle=False,
     )
 
-    model, optimizer, scheduler = setup_distributed_training(
+    model, optimizer = setup_distributed_training(
         model=model,
         transformer_layer_cls={ViTLayer},
         seed=seed,
         config=config,
     )
+    scheduler = steup_lr_scheduler(optimizer, config)
 
     return model, train_loader, val_loader, train_sampler, optimizer, scheduler
 
@@ -453,7 +458,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         ),  # TODO: dynamic value?
         shuffle=False,
     )
-    model, optimizer, scheduler = setup_distributed_training(
+    model, optimizer = setup_distributed_training(
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
@@ -507,5 +512,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         print(
             f"LR Setup Complete: Pretrained params at {base_lr}, new params at {base_lr * new_layer_mult}"
         )
+
+    scheduler = steup_lr_scheduler(optimizer, config)
 
     return model, train_loader, val_loader, train_sampler, optimizer, scheduler
