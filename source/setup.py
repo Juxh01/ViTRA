@@ -5,6 +5,7 @@ from typing import Any, Dict
 import functools
 import os
 import random
+from pprint import pprint
 
 import numpy as np
 import torch
@@ -338,6 +339,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     )
 
     model = DPTForSemanticSegmentation(dpt_base_config)
+    pprint(model.dpt)
     if backbone_name:
         print(f"Initializing DPT with pretrained backbone: {backbone_name}")
         model.dpt.embeddings.load_state_dict(pretrained_vit.embeddings.state_dict())
