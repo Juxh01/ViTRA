@@ -336,16 +336,13 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         pooler_output_size=None,  # Defaults to hidden_size
         pooler_act="tanh",
     )
+
+    model = DPTForSemanticSegmentation(dpt_base_config)
     if backbone_name:
         print(f"Initializing DPT with pretrained backbone: {backbone_name}")
-        model = DPTForSemanticSegmentation.from_pretrained(
-            backbone_name,
-            config=dpt_base_config,
-            ignore_mismatched_sizes=True,
-        )
-    else:
-        model = DPTForSemanticSegmentation(dpt_base_config)
-        print("Initializing DPT from scratch (Random Weights)")
+        model.dpt.embeddings.load_state_dict(pretrained_vit.embeddings.state_dict())
+        model.dpt.encoder.load_state_dict(pretrained_vit.encoder.state_dict())
+        model.dpt.layernorm.load_state_dict(pretrained_vit.layernorm.state_dict())
 
     model.to(device)
 
