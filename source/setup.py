@@ -339,8 +339,10 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             config=dpt_base_config,
             ignore_mismatched_sizes=True,
         )
+    else:
+        model = DPTForSemanticSegmentation(dpt_base_config)
+        print("Initializing DPT from scratch (Random Weights)")
 
-    model = DPTForSemanticSegmentation(dpt_base_config)
     model.to(device)
 
     train_transforms = T.Compose(
