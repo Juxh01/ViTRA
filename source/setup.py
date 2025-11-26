@@ -490,22 +490,22 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             else:
                 new_params.append(param)
 
-            if backbone_params:
-                optimizer.add_param_group(
-                    {"params": backbone_params, "lr": base_lr, "name": "backbone"}
-                )
-
-            # Gruppe 2: Random Init Layers (aggressive LR)
-            if new_params:
-                optimizer.add_param_group(
-                    {
-                        "params": new_params,
-                        "lr": base_lr * new_layer_mult,
-                        "name": "head",
-                    }
-                )
-            print(
-                f"LR Setup Complete: {len(backbone_params)} params at {base_lr}, {len(new_params)} params at {base_lr * new_layer_mult}"
+        if backbone_params:
+            optimizer.add_param_group(
+                {"params": backbone_params, "lr": base_lr, "name": "backbone"}
             )
+
+        # Gruppe 2: Random Init Layers (aggressive LR)
+        if new_params:
+            optimizer.add_param_group(
+                {
+                    "params": new_params,
+                    "lr": base_lr * new_layer_mult,
+                    "name": "head",
+                }
+            )
+        print(
+            f"LR Setup Complete: {len(backbone_params)} params at {base_lr}, {len(new_params)} params at {base_lr * new_layer_mult}"
+        )
 
     return model, train_loader, val_loader, train_sampler, optimizer, scheduler
