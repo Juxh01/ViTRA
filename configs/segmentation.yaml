@@ -16,9 +16,9 @@ optimizer:
   lr_factor: 10
   momentum: 0.9
   optimizer_str: "sgd"
-  batch_size_per_device: 32
+  batch_size_per_device: 64
   warmup_epochs: 5
-  epochs: 100
+  epochs: 50
 
   # Replicator settings
   replicate_every: 1

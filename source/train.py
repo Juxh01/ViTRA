@@ -3,7 +3,11 @@
 import os
 
 import torch
+import wandb
 from torch import distributed as dist
+from torch.distributed.fsdp import FullStateDictConfig
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+from torch.distributed.fsdp import StateDictType
 from torchmetrics import MeanMetric, MetricCollection
 from torchmetrics.classification import (
     MulticlassAccuracy,
@@ -182,6 +186,29 @@ def train(
             results_dict.update({k: v.item() for k, v in val_metrics_dict.items()})
             run.log(results_dict)
         scheduler.step()
+
+    ### Save final model ###
+
+    # Collect the full state dict on CPU
+    save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
+    with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
+        cpu_state = model.state_dict()
+
+    if rank == 0:
+        print("Saving final model to WandB...")
+        model_filename = f"model-epoch_{num_epochs}.pt"
+        torch.save(cpu_state, model_filename)
+
+        artifact = wandb.Artifact(
+            name=f"model-{run.id}",
+            type="model",
+            description=f"Trained model state_dict after {num_epochs} epochs",
+        )
+
+        artifact.add_file(model_filename)
+        run.log_artifact(artifact)
+
+        print("Model saved and uploaded.")
     if rank == 0:
         run.finish()
     dist.destroy_process_group()

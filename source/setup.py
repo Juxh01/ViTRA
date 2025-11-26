@@ -5,7 +5,6 @@ from typing import Any, Dict
 import functools
 import os
 import random
-from pprint import pprint
 
 import numpy as np
 import torch
@@ -98,6 +97,10 @@ def setup_distributed_training(
     config: Dict[str, Any],
 ):
     optim_config = config["optimizer"]
+
+    model.gradient_checkpointing_enable(
+        gradient_checkpointing_kwargs={"use_reentrant": False}
+    )
 
     auto_wrap_policy = functools.partial(
         transformer_auto_wrap_policy, transformer_layer_cls=transformer_layer_cls
@@ -343,7 +346,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     )
 
     model = DPTForSemanticSegmentation(dpt_base_config)
-    pprint(model)
     if backbone_name:
         print(f"Initializing DPT with pretrained backbone: {backbone_name}")
 
