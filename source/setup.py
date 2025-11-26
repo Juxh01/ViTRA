@@ -36,7 +36,6 @@ from transformers import (
 )
 from transformers.models.dpt.modeling_dpt import (
     DPTAuxiliaryHead,
-    DPTFeatureFusionStage,
     DPTNeck,
     DPTSemanticSegmentationHead,
     DPTViTEmbeddings,
@@ -466,7 +465,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             # DPTPreActResidualLayer, # DeToNATION fails here due to weights with no grad
             DPTNeck,
             DPTSemanticSegmentationHead,
-            DPTFeatureFusionStage,
         ),
         seed=seed,
         config=config,
