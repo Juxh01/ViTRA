@@ -339,9 +339,11 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     )
 
     model = DPTForSemanticSegmentation(dpt_base_config)
-    pprint(model.dpt)
+    pprint(model)
     if backbone_name:
         print(f"Initializing DPT with pretrained backbone: {backbone_name}")
+
+        # Manually load weights as AutoBackbone does not support DPT yet
         model.dpt.embeddings.load_state_dict(
             pretrained_vit.embeddings.state_dict(), strict=False
         )
