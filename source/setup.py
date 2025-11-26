@@ -476,9 +476,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         backbone_params = []
         new_params = []
 
-        # Remove all param groups
-        optimizer.param_groups = []
-
         # Recreate param groups
         for name, param in model.named_parameters():
             if not param.requires_grad:
@@ -490,6 +487,15 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             else:
                 new_params.append(param)
 
+        assert len(backbone_params) + len(new_params) == len(
+            list(model.parameters())
+        ), "Parameter count mismatch!"
+        assert len(optimizer.param_groups) == len(backbone_params) + len(new_params), (
+            "Optimizer param groups not empty!"
+        )
+
+        # Remove all param groups
+        optimizer.param_groups = []
         if backbone_params:
             optimizer.add_param_group(
                 {"params": backbone_params, "lr": base_lr, "name": "backbone"}
