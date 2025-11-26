@@ -484,8 +484,10 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             # Weights at dpt.* belong to the ViT backbone
             if name.startswith("dpt.") or "dpt." in name:
                 backbone_params.append(param)
+                print(name)
             else:
                 new_params.append(param)
+                print(f"NEW LAYER: {name}")
 
         assert len(backbone_params) + len(new_params) == len(
             list(model.parameters())
