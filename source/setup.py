@@ -490,12 +490,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         assert len(backbone_params) + len(new_params) == len(
             list(model.parameters())
         ), "Parameter count mismatch!"
-        assert len(optimizer.param_groups[0]) == len(backbone_params) + len(
-            new_params
-        ), print(
-            f"Optimizer param group count mismatch: {len(optimizer.param_groups[0])} vs {len(backbone_params) + len(new_params)}"
-        )
-
         # Remove all param groups
         optimizer.param_groups = []
         if backbone_params:
