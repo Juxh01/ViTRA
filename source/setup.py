@@ -36,8 +36,10 @@ from transformers import (
 )
 from transformers.models.dpt.modeling_dpt import (
     DPTAuxiliaryHead,
-    DPTReassembleLayer,
+    DPTFeatureFusionStage,
+    DPTNeck,
     DPTSemanticSegmentationHead,
+    DPTViTEmbeddings,
     DPTViTLayer,
 )
 from transformers.models.vit.modeling_vit import ViTLayer
@@ -458,11 +460,13 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
+            DPTViTEmbeddings,
             # DPTFeatureFusionLayer, # DeToNATION fails here due to weights with no grad
             DPTAuxiliaryHead,
             # DPTPreActResidualLayer, # DeToNATION fails here due to weights with no grad
-            DPTReassembleLayer,
+            DPTNeck,
             DPTSemanticSegmentationHead,
+            DPTFeatureFusionStage,
         ),
         seed=seed,
         config=config,
@@ -484,10 +488,8 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             # Weights at dpt.* belong to the ViT backbone
             if name.startswith("dpt.") or "dpt." in name:
                 backbone_params.append(param)
-                print(name)
             else:
                 new_params.append(param)
-                print(f"NEW LAYER: {name}")
 
         assert len(backbone_params) + len(new_params) == len(
             list(model.parameters())
@@ -509,7 +511,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
                 }
             )
         print(
-            f"LR Setup Complete: {len(backbone_params)} params at {base_lr}, {len(new_params)} params at {base_lr * new_layer_mult}"
+            f"LR Setup Complete: Pretrained params at {base_lr}, new params at {base_lr * new_layer_mult}"
         )
 
     return model, train_loader, val_loader, train_sampler, optimizer, scheduler
