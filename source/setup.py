@@ -342,9 +342,15 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     pprint(model.dpt)
     if backbone_name:
         print(f"Initializing DPT with pretrained backbone: {backbone_name}")
-        model.dpt.embeddings.load_state_dict(pretrained_vit.embeddings.state_dict())
-        model.dpt.encoder.load_state_dict(pretrained_vit.encoder.state_dict())
-        model.dpt.layernorm.load_state_dict(pretrained_vit.layernorm.state_dict())
+        model.dpt.embeddings.load_state_dict(
+            pretrained_vit.embeddings.state_dict(), strict=False
+        )
+        model.dpt.encoder.load_state_dict(
+            pretrained_vit.encoder.state_dict(), strict=False
+        )
+        model.dpt.layernorm.load_state_dict(
+            pretrained_vit.layernorm.state_dict(), strict=False
+        )
 
     model.to(device)
 
