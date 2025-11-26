@@ -324,21 +324,21 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         semantic_classifier_dropout=0.1,
         # --- Backbone-Configuration (no pretrained version) ---
         backbone_config=None,
-        backbone=None,
-        use_pretrained_backbone=False,
+        backbone=backbone_name,
+        use_pretrained_backbone=True if backbone_name else False,
         use_timm_backbone=False,
         backbone_kwargs=None,
         # --- Pooler-Configuration ---
         pooler_output_size=None,  # Defaults to hidden_size
         pooler_act="tanh",
     )
-
     if backbone_name:
         print(f"Initializing DPT with pretrained backbone: {backbone_name}")
-        dpt_base_config.use_pretrained_backbone = True
-        dpt_base_config.backbone = backbone_name
-    else:
-        print("Initializing DPT from scratch (Random Weights)")
+        model = DPTForSemanticSegmentation.from_pretrained(
+            backbone_name,
+            config=dpt_base_config,
+            ignore_mismatched_sizes=True,
+        )
 
     model = DPTForSemanticSegmentation(dpt_base_config)
     model.to(device)
