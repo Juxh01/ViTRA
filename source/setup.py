@@ -31,6 +31,7 @@ from transformers import (
     DPTForSemanticSegmentation,
     ViTConfig,
     ViTForImageClassification,
+    ViTModel,
 )
 from transformers.models.dpt.modeling_dpt import (
     DPTAuxiliaryHead,
@@ -289,6 +290,11 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     data_dir = config["general"].get("data_dir", "./data")
     backbone_name = config["general"].get("backbone_name", None)
 
+    if backbone_name:
+        pretrained_vit = ViTModel.from_pretrained(
+            backbone_name, add_pooling_layer=False
+        )
+
     dpt_base_config = DPTConfig(
         # --- ViT-Base Configuration (mostly default) ---
         hidden_size=768,
@@ -323,11 +329,10 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         semantic_loss_ignore_index=255,
         semantic_classifier_dropout=0.1,
         # --- Backbone-Configuration (no pretrained version) ---
-        backbone_config=None,
+        backbone_config=pretrained_vit.config if backbone_name else None,
         backbone=backbone_name,
         use_pretrained_backbone=True if backbone_name else False,
         use_timm_backbone=False,
-        backbone_kwargs=None,
         # --- Pooler-Configuration ---
         pooler_output_size=None,  # Defaults to hidden_size
         pooler_act="tanh",
