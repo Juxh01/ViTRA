@@ -330,8 +330,8 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         semantic_loss_ignore_index=255,
         semantic_classifier_dropout=0.1,
         # --- Backbone-Configuration (no pretrained version) ---
-        backbone_config=pretrained_vit.config if backbone_name else None,
-        use_pretrained_backbone=True if backbone_name else False,
+        backbone_config=None,
+        use_pretrained_backbone=False,
         use_timm_backbone=False,
         # --- Pooler-Configuration ---
         pooler_output_size=None,  # Defaults to hidden_size
