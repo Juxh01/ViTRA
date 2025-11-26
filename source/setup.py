@@ -330,7 +330,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         semantic_classifier_dropout=0.1,
         # --- Backbone-Configuration (no pretrained version) ---
         backbone_config=pretrained_vit.config if backbone_name else None,
-        backbone=backbone_name,
         use_pretrained_backbone=True if backbone_name else False,
         use_timm_backbone=False,
         # --- Pooler-Configuration ---
