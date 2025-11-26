@@ -35,7 +35,6 @@ from transformers import (
     ViTModel,
 )
 from transformers.models.dpt.modeling_dpt import (
-    DPTAuxiliaryHead,
     DPTNeck,
     DPTSemanticSegmentationHead,
     DPTViTEmbeddings,
@@ -461,7 +460,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             DPTViTLayer,
             DPTViTEmbeddings,
             # DPTFeatureFusionLayer, # DeToNATION fails here due to weights with no grad
-            DPTAuxiliaryHead,
             # DPTPreActResidualLayer, # DeToNATION fails here due to weights with no grad
             DPTNeck,
             DPTSemanticSegmentationHead,
