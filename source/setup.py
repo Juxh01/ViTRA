@@ -287,6 +287,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     # Get rank
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
     data_dir = config["general"].get("data_dir", "./data")
+    backbone_name = config["general"].get("backbone_name", None)
 
     dpt_base_config = DPTConfig(
         # --- ViT-Base Configuration (mostly default) ---
@@ -331,7 +332,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         pooler_output_size=None,  # Defaults to hidden_size
         pooler_act="tanh",
     )
-    backbone_name = config["general"].get("backbone_name", None)
+
     if backbone_name:
         print(f"Initializing DPT with pretrained backbone: {backbone_name}")
         dpt_base_config.use_pretrained_backbone = True
