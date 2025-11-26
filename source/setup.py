@@ -353,6 +353,8 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         model.dpt.layernorm.load_state_dict(
             pretrained_vit.layernorm.state_dict(), strict=False
         )
+        backbone_params = []
+        new_params = []
 
     model.to(device)
 
@@ -465,5 +467,45 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         seed=seed,
         config=config,
     )
+    optim_config = config["optimizer"]
+
+    # Set different learning rates for backbone and new layers
+    if backbone_name:
+        base_lr = optim_config["lr"]
+        new_layer_mult = optim_config.get("new_layer_mult", 10.0)
+        backbone_params = []
+        new_params = []
+
+        # Remove all param groups
+        optimizer.param_groups = []
+
+        # Recreate param groups
+        for name, param in model.named_parameters():
+            if not param.requires_grad:
+                continue
+
+            # Weights at dpt.* belong to the ViT backbone
+            if name.startswith("dpt.") or "dpt." in name:
+                backbone_params.append(param)
+            else:
+                new_params.append(param)
+
+            if backbone_params:
+                optimizer.add_param_group(
+                    {"params": backbone_params, "lr": base_lr, "name": "backbone"}
+                )
+
+            # Gruppe 2: Random Init Layers (aggressive LR)
+            if new_params:
+                optimizer.add_param_group(
+                    {
+                        "params": new_params,
+                        "lr": base_lr * new_layer_mult,
+                        "name": "head",
+                    }
+                )
+            print(
+                f"LR Setup Complete: {len(backbone_params)} params at {base_lr}, {len(new_params)} params at {base_lr * new_layer_mult}"
+            )
 
     return model, train_loader, val_loader, train_sampler, optimizer, scheduler
