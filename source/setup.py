@@ -98,10 +98,6 @@ def setup_distributed_training(
 ):
     optim_config = config["optimizer"]
 
-    model.gradient_checkpointing_enable(
-        gradient_checkpointing_kwargs={"use_reentrant": False}
-    )
-
     auto_wrap_policy = functools.partial(
         transformer_auto_wrap_policy, transformer_layer_cls=transformer_layer_cls
     )

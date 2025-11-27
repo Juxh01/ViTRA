@@ -8,7 +8,6 @@ general:
   task: "segmentation"
   data_dir: "${hydra:runtime.cwd}/data"
 
-
 optimizer:
   # Optimizer settings
   lr: 1e-5
@@ -16,9 +15,9 @@ optimizer:
   lr_factor: 10
   momentum: 0.9
   optimizer_str: "sgd"
-  batch_size_per_device: 128
+  batch_size_per_device: 32
   warmup_epochs: 5
-  epochs: 5
+  epochs: 6
 
   # Replicator settings
   replicate_every: 1

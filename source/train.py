@@ -17,6 +17,8 @@ from torchmetrics.classification import (
 )
 from tqdm import tqdm
 
+from source.utils.BestModelLogger import BestModelLogger
+
 
 def get_metrics(task: str, device: str):
     if task == "classification":
@@ -82,6 +84,13 @@ def train(
     train_metrics, val_metrics = get_metrics(task, device)
     train_loss_metric = MeanMetric().to(device)
     val_loss_metric = MeanMetric().to(device)
+
+    best_model_logger = BestModelLogger(
+        config=config,
+        val_transform=val_loader.dataset.transform,
+        device=device,
+        num_images=10,
+    )
 
     for epoch in range(1, num_epochs + 1):
         ### Training loop ###
@@ -170,6 +179,18 @@ def train(
         train_metrics_dict = train_metrics.compute()
         val_metrics_dict = val_metrics.compute()
 
+        ### Check for best model and log images if needed ###
+        best_model_logger.check_and_log(
+            current_metrik=(
+                val_metrics_dict["val/mIoU"]
+                if task == "segmentation"
+                else val_metrics_dict["val/acc"]
+            ),
+            model=model,
+            epoch=epoch,
+            run=run,
+            rank=rank,
+        )
         if rank == 0:
             print(
                 f"Epoch {epoch}/{num_epochs}, "
@@ -187,8 +208,8 @@ def train(
             run.log(results_dict)
         scheduler.step()
 
-    ### Save final model ###
-
+    ### Save final model and best model ###
+    best_model_logger.upload_final_artifact(run=run, rank=rank)
     # Collect the full state dict on CPU
     save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
     with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
