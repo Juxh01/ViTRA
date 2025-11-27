@@ -89,7 +89,7 @@ def train(
         config=config,
         val_transform=val_loader.dataset.transform,
         device=device,
-        num_images=10,
+        num_images=8,
     )
 
     for epoch in range(1, num_epochs + 1):
@@ -181,7 +181,7 @@ def train(
 
         ### Check for best model and log images if needed ###
         best_model_logger.check_and_log(
-            current_metrik=(
+            current_metric=(
                 val_metrics_dict["val/mIoU"]
                 if task == "segmentation"
                 else val_metrics_dict["val/acc"]

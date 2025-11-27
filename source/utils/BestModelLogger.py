@@ -55,7 +55,7 @@ class BestModelLogger:
         # Stack inputs into a batch for efficient inference
         self.fixed_model_inputs = torch.stack(self.fixed_model_inputs).to(device)
 
-    def check_and_log(self, current_metrik, model, epoch, run, rank):
+    def check_and_log(self, current_metric, model, epoch, run, rank):
         """
         Checks if the current model is the best. If so:
         1. Saves the state dict locally.
@@ -63,8 +63,8 @@ class BestModelLogger:
         3. Upscales predictions to match original image size.
         4. Logs the raw images with overlayed masks to WandB.
         """
-        if current_metrik > self.best_metrik:
-            self.best_metrik = current_metrik
+        if current_metric > self.best_metric:
+            self.best_metric = current_metric
 
             if self.task == "segmentation":
                 # --- Inference ---
@@ -76,7 +76,7 @@ class BestModelLogger:
 
                 if rank == 0:
                     print(
-                        f"New best mIoU: {self.best_metrik:.4f}. Logging images and saving model..."
+                        f"New best metric: {self.best_metric:.4f}. Logging images and saving model..."
                     )
 
                     wandb_images = []
@@ -144,7 +144,7 @@ class BestModelLogger:
                                         "class_labels": VOC_CLASS_LABELS,
                                     },
                                 },
-                                caption=f"Img {i} (Epoch {epoch}) | Original Size: {raw_img.size} | mIoU: {self.best_metrik:.4f}",
+                                caption=f"Img {i} (Epoch {epoch}) | Original Size: {raw_img.size} | Metric: {self.best_metric:.4f}",
                             )
                         )
 
@@ -171,7 +171,7 @@ class BestModelLogger:
             artifact = wandb.Artifact(
                 name=f"best-model-{run.id}",
                 type="model",
-                description=f"Best model based on val/mIoU or val/acc ({self.best_metrik:.4f})",
+                description=f"Best model based on val/mIoU or val/acc ({self.best_metric:.4f})",
             )
             artifact.add_file("best_model.pt")
             run.log_artifact(artifact)
