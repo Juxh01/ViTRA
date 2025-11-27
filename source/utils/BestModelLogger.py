@@ -23,7 +23,7 @@ class BestModelLogger:
             device (str): The device to run inference on.
             num_images (int): Number of samples to visualize.
         """
-        self.best_metrik = -1.0
+        self.best_metric = -1.0
         self.device = device
         self.num_images = num_images
         self.task = config["general"]["task"]
