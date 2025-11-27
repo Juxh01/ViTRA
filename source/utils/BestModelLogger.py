@@ -11,7 +11,7 @@ from torchvision import datasets
 
 
 class BestModelLogger:
-    def __init__(self, config, val_transform, device, num_images=10):
+    def __init__(self, config, val_dataset, device, num_images=10):
         """
         Logger to track the best model based on mIoU and visualize predictions using
         original, unprocessed images.
@@ -31,29 +31,34 @@ class BestModelLogger:
         # Retrieve data directory
         data_dir = config["general"].get("data_dir", "./data")
 
-        # Initialize the dataset without transforms
-        self.raw_dataset = datasets.VOCSegmentation(
-            root=data_dir, year="2012", image_set="val", download=False, transform=None
-        )
-
-        self.fixed_raw_data = []
-        self.fixed_model_inputs = []
-
-        for i in range(min(num_images, len(self.raw_dataset))):
-            # Get raw data (PIL Image, PIL Image/Map)
-            raw_img, raw_target = self.raw_dataset[i]
-
-            self.fixed_raw_data.append(
-                {"raw_img": raw_img, "raw_target": np.array(raw_target)}
+        if self.task == "segmentation":
+            # Initialize the dataset without transforms
+            self.raw_dataset = datasets.VOCSegmentation(
+                root=data_dir,
+                year="2012",
+                image_set="val",
+                download=False,
+                transform=None,
             )
 
-            # Apply the validation transform to generate the model input
-            img_tensor, _ = val_transform(raw_img, raw_target)
+            self.fixed_raw_data = []
+            self.fixed_model_inputs = []
 
-            self.fixed_model_inputs.append(img_tensor)
+            for i in range(min(num_images, len(self.raw_dataset))):
+                # Get raw data (PIL Image, PIL Image/Map)
+                raw_img, raw_target = self.raw_dataset[i]
 
-        # Stack inputs into a batch for efficient inference
-        self.fixed_model_inputs = torch.stack(self.fixed_model_inputs).to(device)
+                self.fixed_raw_data.append(
+                    {"raw_img": raw_img, "raw_target": np.array(raw_target)}
+                )
+
+                # Apply the validation transform to generate the model input
+                img_tensor, _ = val_dataset[i]
+
+                self.fixed_model_inputs.append(img_tensor)
+
+            # Stack inputs into a batch for efficient inference
+            self.fixed_model_inputs = torch.stack(self.fixed_model_inputs).to(device)
 
     def check_and_log(self, current_metric, model, epoch, run, rank):
         """

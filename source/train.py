@@ -87,7 +87,7 @@ def train(
 
     best_model_logger = BestModelLogger(
         config=config,
-        val_transform=val_loader.dataset.transform,
+        val_dataset=val_loader.dataset,
         device=device,
         num_images=8,
     )
