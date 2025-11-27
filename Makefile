@@ -5,8 +5,12 @@ DIR := "${CURDIR}"
 SOURCE_DIR := ${PACKAGE_NAME}
 DIST := dist
 TESTS_DIR := tests
+# Path to standard configuration files
+CONF_CLS ?= configs/classification.yaml
+CONF_SEG ?= configs/segmentation.yaml
 
 .PHONY: help install check format pre-commit clean clean-build build publish test
+.PHONY: classification segmentation
 
 help:
 	@echo "Makefile ${NAME}"
@@ -25,6 +29,17 @@ PIP ?= uv pip
 MAKE ?= make
 PRECOMMIT ?= uv run pre-commit
 RUFF ?= uv run ruff
+# Default torchrun command
+TORCHRUN ?= torchrun
+
+define build_torchrun_cmd
+	$(PYTHON) -c "from omegaconf import OmegaConf; \
+	conf = OmegaConf.load('$(1)'); \
+	dist = conf.distributed; \
+	cmd = f'--nproc_per_node={dist.nproc_per_node} --nnodes={dist.nnodes}'; \
+	cmd += ' --standalone' if dist.get('standalone', False) else f' --node_rank={dist.node_rank} --master_addr={dist.master_addr} --master_port={dist.master_port}'; \
+	print(cmd)"
+endef
 
 install:
 	$(PIP) install swig
@@ -45,5 +60,16 @@ format:
 	$(RUFF) check --fix source tests --exit-zero
 test:
 	$(PYTEST) ${TESTS_DIR}
+
+classification:
+	@echo "Starte Classification Training mit Config: $(CONF_CLS)"
+	$(eval TORCH_FLAGS := $(shell $(call build_torchrun_cmd,$(CONF_CLS))))
+	$(TORCHRUN) $(TORCH_FLAGS) source/experiments/classification.py 
+
+segmentation:
+	@echo "Starte Segmentation Training mit Config: $(CONF_SEG)"
+	$(eval TORCH_FLAGS := $(shell $(call build_torchrun_cmd,$(CONF_SEG))))
+	$(TORCHRUN) $(TORCH_FLAGS) source/experiments/segmentation.py 
+	
 
 
