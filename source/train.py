@@ -52,6 +52,7 @@ def get_metrics(task: str, device: str):
                 "val/hd95": HausdorffDistance95(num_classes=21, ignore_index=255),
             }
         )
+        val_metrics = val_metrics.to(device)
     return train_metrics, val_metrics
 
 
