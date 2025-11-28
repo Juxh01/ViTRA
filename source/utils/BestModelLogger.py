@@ -4,9 +4,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import wandb
-from torch.distributed.fsdp import FullStateDictConfig
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from torch.distributed.fsdp import StateDictType
+from torch.distributed.checkpoint.state_dict import StateDictOptions, get_state_dict
 from torchvision import datasets
 
 
@@ -60,7 +58,7 @@ class BestModelLogger:
             # Stack inputs into a batch for efficient inference
             self.fixed_model_inputs = torch.stack(self.fixed_model_inputs).to(device)
 
-    def check_and_log(self, current_metric, model, epoch, run, rank):
+    def check_and_log(self, current_metric, model, optimizer, epoch, run, rank):
         """
         Checks if the current model is the best. If so:
         1. Saves the state dict locally.
@@ -88,16 +86,17 @@ class BestModelLogger:
 
                     # Iterate through each fixed sample
                     for i in range(len(self.fixed_raw_data)):
-                        raw_img = self.fixed_raw_data[i]["raw_img"]
+                        raw_img_pil = self.fixed_raw_data[i]["raw_img"]
+                        # Convert to numpy to ensure WandB sees (H, W, C) matching the mask
+                        raw_img_np = np.array(raw_img_pil)
                         raw_target = self.fixed_raw_data[i]["raw_target"]
 
                         # Get the logits for this specific sample (C, H_model, W_model)
                         sample_logits = logits[i].unsqueeze(0)
 
                         # Resize logits back to the ORIGINAL raw image size
-                        original_size = raw_img.size[
-                            ::-1
-                        ]  # PIL is (W, H), PyTorch needs (H, W)
+                        # PIL size is (W, H), PyTorch interpolate needs (H, W)
+                        original_size = raw_img_pil.size[::-1]
 
                         if sample_logits.shape[-2:] != original_size:
                             sample_logits = F.interpolate(
@@ -138,7 +137,7 @@ class BestModelLogger:
                         # Create overlayed WandB image
                         wandb_images.append(
                             wandb.Image(
-                                raw_img,
+                                raw_img_np,
                                 masks={
                                     "predictions": {
                                         "mask_data": pred_mask,
@@ -149,7 +148,7 @@ class BestModelLogger:
                                         "class_labels": VOC_CLASS_LABELS,
                                     },
                                 },
-                                caption=f"Img {i} (Epoch {epoch}) | Original Size: {raw_img.size} | Metric: {self.best_metric:.4f}",
+                                caption=f"Img {i} (Epoch {epoch}) | Original Size: {raw_img_pil.size} | Metric: {self.best_metric:.4f}",
                             )
                         )
 
@@ -159,15 +158,12 @@ class BestModelLogger:
                         commit=False,
                     )
 
-            # --- Save Model State ---
-            save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
-            with FSDP.state_dict_type(
-                model, StateDictType.FULL_STATE_DICT, save_policy
-            ):
-                cpu_state = model.state_dict()
+            # --- Save Model State (New API) ---
+            options = StateDictOptions(full_state_dict=True, cpu_offload=True)
+            model_state_dict, _ = get_state_dict(model, optimizer, options=options)
 
             if rank == 0:
-                torch.save(cpu_state, "best_model.pt")
+                torch.save(model_state_dict, "best_model.pt")
 
     def upload_final_artifact(self, run, rank):
         """Uploads the locally saved best model to WandB at the end of training."""
