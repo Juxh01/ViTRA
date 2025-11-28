@@ -2,7 +2,10 @@ import os
 
 import torch
 import torch.nn as nn
-from torch.distributed.checkpoint.state_dict import set_model_state_dict
+from torch.distributed.checkpoint.state_dict import (
+    StateDictOptions,
+    set_model_state_dict,
+)
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torchvision import datasets, tv_tensors
@@ -62,7 +65,8 @@ def evaluate_segmentation(model, device, config, run):
     val_metrics.reset()
     adv_metrics.reset()
     state_dict = torch.load("best_model.pt", map_location="cpu")
-    set_model_state_dict(model, model_state_dict=state_dict)
+    options = StateDictOptions(full_state_dict=True, cpu_offload=True)
+    set_model_state_dict(model, model_state_dict=state_dict, options=options)
 
     # Get new validation dataloader with no normalization for adversarial attack
     data_dir = config["general"].get("data_dir", "./data")
