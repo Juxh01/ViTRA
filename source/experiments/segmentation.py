@@ -43,7 +43,6 @@ def main(cfg: DictConfig) -> None:
     )
     evaluate_segmentation(
         model=model,
-        dataloader=val_loader,
         device=device,
         config=config_dict,
         run=run,
