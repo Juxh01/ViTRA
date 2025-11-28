@@ -43,6 +43,6 @@ adversarial:
   epsilon: 0.00784 # 2/255
   steps: 50       
   loss: "mask-ce-bal" # oder "js-avg"
-  n_restarts: 3
+  n_restarts: 1
   
   
