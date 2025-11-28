@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import numpy as np
 import torch
@@ -153,16 +154,21 @@ class BestModelLogger:
                         )
 
                     # Log to WandB
-                    run.log(
-                        {"val/best_model_predictions": wandb_images, "epoch": epoch},
-                        commit=False,
-                    )
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings(
+                            "ignore", message="Images sizes do not match"
+                        )
+                        run.log(
+                            {
+                                "val/best_model_predictions": wandb_images,
+                                "epoch": epoch,
+                            },
+                            commit=False,
+                        )
 
             # --- Save Model State (New API) ---
             options = StateDictOptions(full_state_dict=True, cpu_offload=True)
-            model_state_dict, _ = get_state_dict(
-                model, optimizers=None, options=options
-            )
+            model_state_dict, _ = get_state_dict(model, optimizers=(), options=options)
 
             if rank == 0:
                 torch.save(model_state_dict, "best_model.pt")
