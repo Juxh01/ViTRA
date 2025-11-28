@@ -15,6 +15,7 @@ from torchmetrics.classification import (
     MulticlassF1Score,
     MulticlassJaccardIndex,
 )
+from torchmetrics.segmentation import HausdorffDistance
 from tqdm import tqdm
 
 from source.utils.BestModelLogger import BestModelLogger
@@ -45,12 +46,12 @@ def get_metrics(task: str, device: str):
 
     train_metrics = metrics.clone(prefix="train/").to(device)
     val_metrics = metrics.clone(prefix="val/").to(device)
-    # if task == "segmentation":
-    #     val_metrics.add_metrics(
-    #         {
-    #             "val/hd95": HausdorffDistance(num_classes=21, ignore_index=255),
-    #         }
-    #     )
+    if task == "segmentation":
+        val_metrics.add_metrics(
+            {
+                "val/hd95": HausdorffDistance(num_classes=21, ignore_index=255),
+            }
+        )
     return train_metrics, val_metrics
 
 
