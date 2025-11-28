@@ -1,3 +1,6 @@
+# Several implementations of Hausdorff Distance 95 exist, but they usually do not handle ignore_index properly or support batch processing or provide percentile calculation.
+# This implementation uses the DeepMind surface-distance library to compute the HD95 while properly handling ignore_index and batch processing.
+
 import numpy as np
 import torch
 from surface_distance import metrics as sd_metrics
@@ -74,9 +77,7 @@ class HausdorffDistance95(Metric):
                 has_target = np.any(t_bool)
 
                 if not has_pred and not has_target:
-                    # Both empty -> Perfect match (distance 0)
-                    batch_sum += 0.0
-                    batch_count += 1
+                    # Both empty -> Perfect match
                     continue
 
                 if not has_pred or not has_target:
