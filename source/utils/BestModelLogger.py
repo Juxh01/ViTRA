@@ -58,7 +58,7 @@ class BestModelLogger:
             # Stack inputs into a batch for efficient inference
             self.fixed_model_inputs = torch.stack(self.fixed_model_inputs).to(device)
 
-    def check_and_log(self, current_metric, model, optimizer, epoch, run, rank):
+    def check_and_log(self, current_metric, model, epoch, run, rank):
         """
         Checks if the current model is the best. If so:
         1. Saves the state dict locally.
@@ -160,7 +160,9 @@ class BestModelLogger:
 
             # --- Save Model State (New API) ---
             options = StateDictOptions(full_state_dict=True, cpu_offload=True)
-            model_state_dict, _ = get_state_dict(model, optimizer, options=options)
+            model_state_dict, _ = get_state_dict(
+                model, optimizers=None, options=options
+            )
 
             if rank == 0:
                 torch.save(model_state_dict, "best_model.pt")

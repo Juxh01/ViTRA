@@ -187,7 +187,6 @@ def train(
                 else val_metrics_dict["val/acc"]
             ),
             model=model,
-            optimizer=optimizer,
             epoch=epoch,
             run=run,
             rank=rank,
