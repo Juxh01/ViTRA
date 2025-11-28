@@ -4,7 +4,6 @@ import os
 
 import torch
 import wandb
-from torch import distributed as dist
 from torch.distributed.fsdp import FullStateDictConfig
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import StateDictType
@@ -232,6 +231,3 @@ def train(
         run.log_artifact(artifact)
 
         print("Model saved and uploaded.")
-    if rank == 0:
-        run.finish()
-    dist.destroy_process_group()

@@ -4,7 +4,9 @@ import hydra
 import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf
+from torch import distributed as dist
 
+from source.evaluate import evaluate_segmentation
 from source.setup import setup_segmentation
 from source.train import train
 
@@ -39,6 +41,17 @@ def main(cfg: DictConfig) -> None:
         scheduler=scheduler,
         run=run,
     )
+    evaluate_segmentation(
+        model=model,
+        dataloader=val_loader,
+        device=device,
+        config=config_dict,
+        run=run,
+    )
+
+    if rank == 0:
+        run.finish()
+    dist.destroy_process_group()
 
 
 if __name__ == "__main__":

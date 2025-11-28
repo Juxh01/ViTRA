@@ -12,9 +12,7 @@ def compute_iou_acc(pred, target, n_cls, verbose=False, ignore_index=-1, device=
     # print('until 0')
     if device is None:
         device = pred.device
-    acc = 0
     acc_cls = torch.zeros(n_cls, device=device)
-    n_ex = 0
     n_pxl_cls = torch.zeros(n_cls, device=device)
     int_cls = torch.zeros(n_cls, device=device)
     union_cls = torch.zeros(n_cls, device=device)
@@ -69,7 +67,7 @@ def L1_projection(x2, y2, eps1):
     u = torch.min(1 - x - y, x + y)
     # u = torch.min(u, epsinf - torch.clone(y).abs())
     u = torch.min(torch.zeros_like(y), u)
-    l = -torch.clone(y).abs()  # E741
+    l = -torch.clone(y).abs()  # noqa E741
     d = u.clone()
 
     bs, indbs = torch.sort(-torch.cat((u, l), 1), dim=1)
@@ -379,7 +377,6 @@ def apgd_train(
     loss_best = loss_indiv.detach().clone()
     loss_best_last_check = loss_best.clone()
     reduced_last_check = torch.ones_like(loss_best)
-    n_reduced = 0
 
     u = torch.arange(x.shape[0], device=device)
     x_adv_old = x_adv.clone().detach()

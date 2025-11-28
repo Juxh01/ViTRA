@@ -17,7 +17,7 @@ optimizer:
   optimizer_str: "sgd"
   batch_size_per_device: 32
   warmup_epochs: 5
-  epochs: 50
+  epochs: 35
 
   # Replicator settings
   replicate_every: 1
@@ -40,8 +40,9 @@ distributed:
 
 adversarial:
   enabled: true
-  epsilon: 0.015  # ca. 4/255
-  steps: 10       
+  epsilon: 0.00784 # 2/255
+  steps: 50       
   loss: "mask-ce-bal" # oder "js-avg"
+  n_restarts: 3
   
   

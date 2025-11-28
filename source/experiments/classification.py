@@ -4,6 +4,7 @@ import hydra
 import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf
+from torch import distributed as dist
 
 from source.setup import setup_classification
 from source.train import train
@@ -41,6 +42,9 @@ def main(cfg: DictConfig) -> None:
         scheduler=scheduler,
         run=run,
     )
+    if rank == 0:
+        run.finish()
+    dist.destroy_process_group()
 
 
 if __name__ == "__main__":
