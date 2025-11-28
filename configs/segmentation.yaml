@@ -44,5 +44,6 @@ adversarial:
   steps: 50       
   loss: "mask-ce-bal" # oder "js-avg"
   n_restarts: 1
+  batch_size_per_device: 256
   
   

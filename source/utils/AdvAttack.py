@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from autoattack.other_utils import L0_norm, L1_norm, L2_norm, Logger
 
 
-def compute_iou_acc(pred, target, n_cls, verbose=False, ignore_index=-1, device=None):
+def compute_iou_acc(pred, target, n_cls, verbose=False, ignore_index=255, device=None):
     # print('until 0')
     if device is None:
         device = pred.device
@@ -140,11 +140,13 @@ def dlr_loss_targeted(x, y, y_target):
     )
 
 
-def masked_cross_entropy(pred, target, weights=None, reduction="none", ignore_index=-1):
+def masked_cross_entropy(
+    pred, target, weights=None, reduction="none", ignore_index=255
+):
     """Cross-entropy of only correctly classified pixels."""
     mask = pred.max(1)[1] == target
     mask = (target != ignore_index) * mask  # TODO: this should be unnecessary.
-    loss = F.cross_entropy(pred, target, reduction="none", ignore_index=-1)
+    loss = F.cross_entropy(pred, target, reduction="none", ignore_index=255)
     loss = mask.float().detach() * loss
 
     if reduction == "mean":
@@ -153,7 +155,7 @@ def masked_cross_entropy(pred, target, weights=None, reduction="none", ignore_in
 
 
 def masked_cross_entropy_balanced(
-    pred, target, weights=None, reduction="none", ignore_index=-1
+    pred, target, weights=None, reduction="none", ignore_index=255
 ):
     """class-balanced Cross-entropy of only correctly classified pixels."""
     mask = pred.max(1)[1] == target
@@ -163,7 +165,7 @@ def masked_cross_entropy_balanced(
         pred,
         target,
         reduction="none",
-        ignore_index=-1,
+        ignore_index=255,
         weight=weights.to(pred.device),
     )
     loss = mask.float().detach() * loss
@@ -191,7 +193,7 @@ def js_div_fn(
     softmax_output=False,
     reduction="none",
     red_dim=None,
-    ignore_index=-1,
+    ignore_index=255,
 ):
     """
     Compute JS divergence between p and q.
@@ -249,8 +251,8 @@ def check_oscillation(x, j, k, y5, k3=0.75):
 
 
 criterion_dict = {
-    "ce": lambda x, y: F.cross_entropy(x, y, reduction="none", ignore_index=-1),
-    "ce-avg": lambda x, y: F.cross_entropy(x, y, reduction="none", ignore_index=-1),
+    "ce": lambda x, y: F.cross_entropy(x, y, reduction="none", ignore_index=255),
+    "ce-avg": lambda x, y: F.cross_entropy(x, y, reduction="none", ignore_index=255),
     "mask-ce-avg": masked_cross_entropy,
     "mask-ce-bal": masked_cross_entropy_balanced,
     "js-avg": partial(js_loss, reduction="none"),
@@ -272,13 +274,13 @@ def apgd_train(
     track_loss=None,
     logger=None,
     y_target=None,
-    ignore_index=-1,
+    ignore_index=255,
     x_init=None,
     num_classes=21,
     weights=None,
 ):
     assert not model.training
-    assert ignore_index == -1, "Only `ignore_index = 1` is supported."
+    assert ignore_index == 255, "Only `ignore_index = 255` is supported."
     device = x.device
     ndims = len(x.shape) - 1
     bs = x.shape[0]
@@ -588,7 +590,7 @@ def apgd_restarts(
     eot_iter=0,
     track_loss=None,
     use_rs=False,
-    ignore_index=-1,
+    ignore_index=255,
 ):
     """Run apgd with the option of restarts."""
     logger = Logger(log_path)
@@ -677,7 +679,7 @@ def apgd_largereps(
     eot_iter=0,
     track_loss=None,
     use_rs=False,
-    ignore_index=-1,
+    ignore_index=255,
     num_classes=21,
 ):
     """Run apgd with the option of restarts."""

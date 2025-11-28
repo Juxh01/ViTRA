@@ -1,7 +1,12 @@
 import os
 
 import torch
+import torch.nn as nn
 from torch.distributed.checkpoint.state_dict import set_model_state_dict
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
+from torchvision import datasets, tv_tensors
+from torchvision.transforms import v2 as T
 from tqdm import tqdm
 
 from source.train import get_metrics
@@ -33,7 +38,20 @@ VOC_WTS = [
 ]
 
 
-def evaluate_segmentation(model, dataloader, device, config, run):
+# Wrapper to include normalization in the model for evaluation
+class NormalizationWrapper(nn.Module):
+    def __init__(self, model, mean, std):
+        super().__init__()
+        self.model = model
+        self.register_buffer("mean", torch.tensor(mean).view(1, 3, 1, 1))
+        self.register_buffer("std", torch.tensor(std).view(1, 3, 1, 1))
+
+    def forward(self, x):
+        x_norm = (x - self.mean) / self.std
+        return self.model(x_norm)
+
+
+def evaluate_segmentation(model, device, config, run):
     rank = int(os.environ["RANK"])
     model.eval()
     _, val_metrics = get_metrics("segmentation", device)
@@ -45,15 +63,58 @@ def evaluate_segmentation(model, dataloader, device, config, run):
     adv_metrics.reset()
     state_dict = torch.load("best_model.pt", map_location="cpu")
     set_model_state_dict(model, model_state_dict=state_dict)
+
+    # Get new validation dataloader with no normalization for adversarial attack
+    data_dir = config["general"].get("data_dir", "./data")
+    val_transforms = T.Compose(
+        [
+            T.Resize(size=(384, 384)),
+            T.ToImage(),
+            T.ToDtype(
+                dtype={
+                    tv_tensors.Image: torch.float32,
+                    tv_tensors.Mask: torch.int64,
+                    "others": None,
+                },
+                scale=True,
+            ),
+            # No normalization for adversarial attack
+        ],
+    )
+    val_dataset = datasets.VOCSegmentation(
+        root=data_dir,
+        year="2012",
+        image_set="val",
+        download=False,
+        transforms=val_transforms,
+    )
+    val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
+    val_sampler = DistributedSampler(val_dataset, shuffle=False)
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=config["adversarial"]["batch_size_per_device"],
+        sampler=val_sampler,
+        num_workers=int(
+            os.environ.get("SLURM_CPUS_PER_TASK", 4)
+        ),  # TODO: dynamic value?
+        shuffle=False,
+    )
+
+    # Wrap Model
+    mean = [0.485, 0.456, 0.406]
+    std = [0.229, 0.224, 0.225]
+    wrapped_model = NormalizationWrapper(model, mean, std).to(device).eval()
+
+    ### Evaluation ###
     for images, targets in tqdm(
-        dataloader, desc="Evaluating", disable=rank > 0, colour="green", ncols=150
+        val_loader, desc="Evaluating", disable=rank > 0, colour="green", ncols=150
     ):
         images = images.to(device)
         targets = targets.to(device)
         with torch.no_grad():
-            clean_outputs = model(images.clone())
+            clean_outputs = wrapped_model(images.clone())
         adv_images, _, _ = apgd_largereps(
-            model=model,
+            model=wrapped_model,
             x=images,
             y=targets,
             weights=torch.tensor(VOC_WTS).to(images.device),
@@ -69,7 +130,7 @@ def evaluate_segmentation(model, dataloader, device, config, run):
             num_classes=21,
         )
         with torch.no_grad():
-            adv_outputs = model(adv_images)
+            adv_outputs = wrapped_model(adv_images)
         val_metrics.update(clean_outputs.logits, targets)
         adv_metrics.update(adv_outputs.logits, targets)
 
