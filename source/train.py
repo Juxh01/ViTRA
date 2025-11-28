@@ -49,9 +49,7 @@ def get_metrics(task: str, device: str):
     if task == "segmentation":
         val_metrics.add_metrics(
             {
-                "val/hd95": MaskedHausdorffDistance(
-                    num_classes=21, ignore_index=255, percentile=95
-                ),
+                "val/hd95": MaskedHausdorffDistance(num_classes=21, ignore_index=255),
             }
         )
     return train_metrics, val_metrics
