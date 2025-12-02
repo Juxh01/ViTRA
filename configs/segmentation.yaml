@@ -13,7 +13,7 @@ optimizer:
   lr: 1e-5
   lr_power: 0.9
   lr_factor: 10
-  momentum: 0.99
+  momentum: 0.9
   optimizer_str: "sgd"
   batch_size_per_device: 32
   warmup_epochs: 5
