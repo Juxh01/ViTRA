@@ -34,6 +34,7 @@ dependencies = [
     "tqdm",
     "torchmetrics",
     "surface-distance @ git+https://github.com/google-deepmind/surface-distance.git",
+    "joblib",
     "autoattack @ git+https://github.com/fra31/auto-attack.git",
 ]
 
