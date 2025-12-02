@@ -115,6 +115,8 @@ def evaluate_segmentation(model, device, config, run):
     ):
         images = images.to(device)
         targets = targets.to(device)
+        if targets.dim() == 4:
+            targets = targets.squeeze(1)
         with torch.no_grad():
             clean_outputs = wrapped_model(images.clone())
         adv_images, _, _ = apgd_largereps(
@@ -135,8 +137,8 @@ def evaluate_segmentation(model, device, config, run):
         )
         with torch.no_grad():
             adv_outputs = wrapped_model(adv_images)
-        val_metrics.update(clean_outputs.logits, targets)
-        adv_metrics.update(adv_outputs.logits, targets)
+        val_metrics.update(clean_outputs, targets)
+        adv_metrics.update(adv_outputs, targets)
 
     val_metrics_dict = val_metrics.compute()
     adv_metrics_dict = adv_metrics.compute()
