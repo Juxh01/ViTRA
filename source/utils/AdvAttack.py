@@ -166,7 +166,7 @@ def masked_cross_entropy_balanced(
         target,
         reduction="none",
         ignore_index=255,
-        weight=weights.to(pred.device),
+        weight=weights.to(pred.device) if weights is not None else None,
     )
     loss = mask.float().detach() * loss
 
@@ -251,8 +251,12 @@ def check_oscillation(x, j, k, y5, k3=0.75):
 
 
 criterion_dict = {
-    "ce": lambda x, y: F.cross_entropy(x, y, reduction="none", ignore_index=255),
-    "ce-avg": lambda x, y: F.cross_entropy(x, y, reduction="none", ignore_index=255),
+    "ce": lambda x, y, weights=None: F.cross_entropy(
+        x, y, reduction="none", ignore_index=255
+    ),
+    "ce-avg": lambda x, y, weights=None: F.cross_entropy(
+        x, y, reduction="none", ignore_index=255
+    ),
     "mask-ce-avg": masked_cross_entropy,
     "mask-ce-bal": masked_cross_entropy_balanced,
     "js-avg": partial(js_loss, reduction="none"),
@@ -356,7 +360,7 @@ def apgd_train(
         ]:
             loss_indiv = track_loss_fn(logits, y, y_target)
         else:
-            loss_indiv = track_loss_fn(logits, y)
+            loss_indiv = track_loss_fn(logits, y, weights)
         loss_indiv = pixel_to_img_loss(loss_indiv, mask_background)
         loss = loss_indiv.sum()
     else:
@@ -475,7 +479,7 @@ def apgd_train(
             # grad /= float(self.eot_iter)
 
             # To potentially use a different loss e.g. no mask.
-            loss_indiv = track_loss_fn(logits, y)
+            loss_indiv = track_loss_fn(logits, y, weights)
             loss_indiv = pixel_to_img_loss(loss_indiv, mask_background)
             loss = loss_indiv.sum()
         else:
