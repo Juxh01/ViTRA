@@ -67,6 +67,8 @@ def evaluate_segmentation(model, device, config, run):
     state_dict = torch.load("best_model.pt", map_location="cpu")
     options = StateDictOptions(full_state_dict=True, cpu_offload=True)
     set_model_state_dict(model, model_state_dict=state_dict, options=options)
+    for param in model.parameters():
+        param.requires_grad = False
 
     # Get new validation dataloader with no normalization for adversarial attack
     data_dir = config["general"].get("data_dir", "./data")
