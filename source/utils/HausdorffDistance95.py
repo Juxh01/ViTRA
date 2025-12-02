@@ -4,7 +4,7 @@ from monai.metrics.hausdorff_distance import HausdorffDistanceMetric
 from torchmetrics import Metric
 
 
-class FastHausdorffDistance95(Metric):
+class HausdorffDistance95(Metric):
     """
     Computes HD95 using MONAI's optimized GPU implementation.
     - Handles ignore_index by zeroing it out (background).
