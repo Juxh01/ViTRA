@@ -42,6 +42,7 @@ def main(cfg: DictConfig) -> None:
         scheduler=scheduler,
         run=run,
     )
+    dist.barrier()
     if rank == 0:
         run.finish()
     dist.destroy_process_group()

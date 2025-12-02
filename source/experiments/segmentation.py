@@ -41,6 +41,7 @@ def main(cfg: DictConfig) -> None:
         scheduler=scheduler,
         run=run,
     )
+    dist.barrier()
     evaluate_segmentation(
         model=model,
         device=device,

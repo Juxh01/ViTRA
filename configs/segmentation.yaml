@@ -15,7 +15,7 @@ optimizer:
   lr_factor: 10
   momentum: 0.9
   optimizer_str: "sgd"
-  batch_size_per_device: 64
+  batch_size_per_device: 32
   warmup_epochs: 5
   epochs: 50
 
@@ -25,8 +25,8 @@ optimizer:
   shards: 2
   repl: "deto-demo"
   # Demo
-  compression_topk: 32
-  compression_chunk: 64
+  compression_topk: 16
+  compression_chunk: 32
   # Random
   compression_rate: None
 
@@ -44,6 +44,6 @@ adversarial:
   steps: 50       
   loss: "mask-ce-bal" # oder "js-avg"
   n_restarts: 1
-  batch_size_per_device: 64
+  batch_size_per_device: 48
   
   
