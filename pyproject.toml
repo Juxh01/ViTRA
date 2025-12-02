@@ -36,6 +36,8 @@ dependencies = [
     "torchmetrics",
     "monai",
     "autoattack @ git+https://github.com/fra31/auto-attack.git",
+    "cupy-cuda12x",
+    "cucim",
 ]
 
 [project.optional-dependencies]

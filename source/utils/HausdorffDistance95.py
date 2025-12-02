@@ -56,7 +56,7 @@ class HausdorffDistance95(Metric):
 
         # Suppress MONAI warnings about empty classes (expected in Segmentation)
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
+            warnings.simplefilter("ignore")
 
             for i in range(batch_size):
                 # Expand dims to (1, H, W) for one_hot conversion
