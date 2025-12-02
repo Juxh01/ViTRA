@@ -123,7 +123,7 @@ def evaluate_segmentation(model, device, config, run):
             model=wrapped_model,
             x=images,
             y=targets,
-            weights=torch.tensor(VOC_WTS).to(images.device),
+            weights=torch.tensor(VOC_WTS).to(images.device, dtype=clean_outputs.dtype),
             norm="Linf",
             eps=config["adversarial"]["epsilon"],
             n_iter=config["adversarial"]["steps"],

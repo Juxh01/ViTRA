@@ -104,7 +104,6 @@ class HausdorffDistance95(Metric):
         target_np = target.detach().cpu().numpy()
 
         # Parallelize the batch loop using joblib
-        # n_jobs=-1 uses all available cores. Adjust if CPU oversubscription occurs.
         results = Parallel(n_jobs=8)(
             delayed(compute_sample_hd95)(
                 preds_np[i],
