@@ -81,7 +81,6 @@ class HausdorffDistance95(Metric):
                     spacing=self.spacing_mm,
                 )
 
-                # 4. Handle Edge Cases
                 # Replace Infinity (one mask empty) with max_dist
                 hd95_scores[torch.isinf(hd95_scores)] = max_dist
 
