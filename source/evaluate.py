@@ -51,7 +51,7 @@ class NormalizationWrapper(nn.Module):
 
     def forward(self, x):
         x_norm = (x - self.mean) / self.std
-        return self.model(x_norm)
+        return self.model(x_norm).logits
 
 
 def evaluate_segmentation(model, device, config, run):
