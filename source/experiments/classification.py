@@ -7,6 +7,7 @@ import wandb
 from omegaconf import DictConfig, OmegaConf
 from torch import distributed as dist
 
+from source.evaluate import evaluate_classification
 from source.setup import setup_classification
 from source.train import train
 
@@ -45,6 +46,12 @@ def main(cfg: DictConfig) -> None:
         run=run,
     )
     dist.barrier()
+    evaluate_classification(
+        model=model,
+        device=device,
+        config=config_dict,
+        run=run,
+    )
     if rank == 0:
         run.finish()
     dist.destroy_process_group()
