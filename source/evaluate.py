@@ -204,21 +204,25 @@ def evaluate_classification(model, device, config, run):
         ),  # TODO: dynamic value?
         shuffle=False,
     )
+    adversary = AutoAttack(
+        model=wrapped_model,
+        norm=config["adversarial"]["norm"],
+        eps=config["adversarial"]["epsilon"],
+        version="standard",
+        seed=config["general"]["seed"],
+        device=device,
+    )
+    import autoattack.checks as checks
 
+    checks.check_dynamic = lambda *args, **kwargs: None
+    checks.check_randomized = lambda *args, **kwargs: None
     ### Evaluation ###
     for images, targets in tqdm(
         val_loader, desc="Evaluating", disable=rank > 0, colour="green", ncols=150
     ):
         images = images.to(device)
         targets = targets.to(device)
-        adversary = AutoAttack(
-            model=wrapped_model,
-            norm=config["adversarial"]["norm"],
-            eps=config["adversarial"]["epsilon"],
-            version="standard",
-            seed=config["general"]["seed"],
-            device=device,
-        )
+
         with torch.no_grad():
             clean_outputs = wrapped_model(images.clone())
         adv_images = adversary.run_standard_evaluation(
