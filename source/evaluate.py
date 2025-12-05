@@ -173,15 +173,6 @@ def evaluate_classification(model, device, config, run):
     std = [0.229, 0.224, 0.225]
     wrapped_model = NormalizationWrapper(model, mean, std).to(device).eval()
 
-    adversary = AutoAttack(
-        model=wrapped_model,
-        norm=config["adversarial"]["norm"],
-        eps=config["adversarial"]["epsilon"],
-        version="standard",
-        seed=config["general"]["seed"],
-        device=device,
-    )
-
     data_dir = config["general"].get("data_dir", "./data")
     val_transforms = T.Compose(
         [
@@ -220,10 +211,18 @@ def evaluate_classification(model, device, config, run):
     ):
         images = images.to(device)
         targets = targets.to(device)
+        adversary = AutoAttack(
+            model=wrapped_model,
+            norm=config["adversarial"]["norm"],
+            eps=config["adversarial"]["epsilon"],
+            version="standard",
+            seed=config["general"]["seed"],
+            device=device,
+        )
         with torch.no_grad():
             clean_outputs = wrapped_model(images.clone())
         adv_images = adversary.run_standard_evaluation(
-            images, targets, bs=images.size(0)
+            images, targets, bs=config["adversarial"]["batch_size_per_device"]
         )
         with torch.no_grad():
             adv_outputs = wrapped_model(adv_images)
