@@ -173,16 +173,17 @@ def evaluate_classification(model, device, config, run):
     val_metrics.reset()
     adv_metrics.reset()
 
-    # Using the same loading options as training to ensure compatibility
+    print(f"Rank {rank}: Loading model weights...")
     state_dict = torch.load("best_model.pt", map_location="cpu")
-    options = StateDictOptions(full_state_dict=True, cpu_offload=True)
-    set_model_state_dict(model, model_state_dict=state_dict, options=options)
+    model.load_state_dict(state_dict)
     for param in model.parameters():
         param.requires_grad = False
 
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
     wrapped_model = NormalizationWrapper(model, mean, std).to(device).eval()
+    for param in model.parameters():
+        param.requires_grad = False
 
     data_dir = config["general"].get("data_dir", "./data")
     val_transforms = T.Compose(
