@@ -59,6 +59,7 @@ class BoundaryIoU(Metric):
         kernel = (dist_sq <= radius**2).float()
         return kernel
 
+    @torch.no_grad()
     def update(self, preds: torch.Tensor, target: torch.Tensor):
         """
         preds: (N, H, W) integer tensor of class labels
