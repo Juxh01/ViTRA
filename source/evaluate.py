@@ -150,3 +150,6 @@ def evaluate_segmentation(model, device, config, run):
         run.log(results_dict)
 
     return val_metrics, adv_metrics
+
+
+# TODO: Plot masks before and after attack

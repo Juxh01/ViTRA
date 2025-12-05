@@ -10,7 +10,8 @@ from torch.distributed.fsdp import StateDictType
 from torchmetrics import MeanMetric, MetricCollection
 from torchmetrics.classification import (
     MulticlassAccuracy,
-    MulticlassAUROC,
+    MulticlassAveragePrecision,
+    MulticlassCalibrationError,
     MulticlassF1Score,
     MulticlassJaccardIndex,
 )
@@ -20,14 +21,32 @@ from source.utils.BestModelLogger import BestModelLogger
 from source.utils.HausdorffDistance95 import HausdorffDistance95
 
 
+class MinClassAccuracy(MulticlassAccuracy):
+    def compute(self):
+        per_class_acc = super().compute()
+        return torch.min(per_class_acc)
+
+
 def get_metrics(task: str, device: str):
+    """
+    Get the appropriate metrics for the given task.
+    Sets the metrics to complement each other well.
+    :param task: The task type ("classification" or "segmentation").
+    :param device: The device to move the metrics to.
+    :return: A tuple of (train_metrics, val_metrics).
+    """
     if task == "classification":
         metrics = MetricCollection(
             {
-                "acc": MulticlassAccuracy(num_classes=100),
+                "acc": MulticlassAccuracy(
+                    num_classes=100,
+                ),
                 "acc_top5": MulticlassAccuracy(num_classes=100, top_k=5),
-                "f1": MulticlassF1Score(num_classes=100, average="macro"),
-                "auc": MulticlassAUROC(num_classes=100, average="macro"),
+                "ece": MulticlassCalibrationError(
+                    num_classes=100, n_bins=15, norm="l1"
+                ),  # from "On Calibration of Modern Neural Networks"
+                "map": MulticlassAveragePrecision(num_classes=100, average="macro"),
+                "min_acc": MinClassAccuracy(num_classes=100, average=None),
             }
         )
     elif task == "segmentation":

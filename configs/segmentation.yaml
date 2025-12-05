@@ -10,7 +10,7 @@ general:
 
 optimizer:
   # Optimizer settings
-  lr: 1e-5
+  lr: 2e-5
   lr_power: 0.9
   lr_factor: 10
   momentum: 0.9
@@ -25,8 +25,8 @@ optimizer:
   shards: 2
   repl: "deto-demo"
   # Demo
-  compression_topk: 16
-  compression_chunk: 32
+  compression_topk: 4
+  compression_chunk: 64
   # Random
   compression_rate: None
 
