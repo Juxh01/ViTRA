@@ -2,8 +2,8 @@
 
 import math
 
-import kornia
 import torch
+import torch.nn.functional as F
 from torchmetrics import Metric
 from torchmetrics.classification import MulticlassJaccardIndex
 
@@ -59,6 +59,30 @@ class BoundaryIoU(Metric):
         kernel = (dist_sq <= radius**2).float()
         return kernel
 
+    def _depthwise_erosion(self, mask_oh: torch.Tensor, kernel: torch.Tensor):
+        """
+        Manual implementation of binary erosion using Depthwise Convolution.
+
+        Args:
+            mask_oh: (B, C, H, W) One-hot mask
+            kernel: (K, K) Binary kernel
+        """
+        C = mask_oh.shape[1]
+        weight = kernel.expand(C, 1, kernel.shape[0], kernel.shape[1])
+
+        # Padding to maintain spatial resolution
+        padding = kernel.shape[0] // 2
+
+        # groups=C ensures each channel is convolved ONLY with its own kernel
+        neighbor_counts = F.conv2d(mask_oh, weight, padding=padding, groups=C)
+
+        # A pixel is kept only if ALL neighbors defined by the kernel are 1.
+        # Sum of neighbors must equal sum of kernel.
+        kernel_area = kernel.sum()
+
+        # Use a small epsilon for float stability
+        return (neighbor_counts >= (kernel_area - 1e-4)).float()
+
     @torch.no_grad()
     def update(self, preds: torch.Tensor, target: torch.Tensor):
         """
@@ -112,14 +136,15 @@ class BoundaryIoU(Metric):
 
         # Compute Inner Boundary Regions
         # P_d \cap P
-        pred_eroded = kornia.morphology.erosion(preds_oh, kernel, engine="convolution")
+        pred_eroded = self._depthwise_erosion(preds_oh, kernel)
         pred_boundary = preds_oh - pred_eroded
 
         # G_d \cap G
-        target_eroded = kornia.morphology.erosion(
-            target_oh, kernel, engine="convolution"
-        )
+        target_eroded = self._depthwise_erosion(target_oh, kernel)
         target_boundary = target_oh - target_eroded
+
+        pred_boundary = pred_boundary * valid_mask_expanded
+        target_boundary = target_boundary * valid_mask_expanded
 
         # Compute Intersection and Union
         # Equation (1) in paper: Intersection of boundaries / Union of boundaries
