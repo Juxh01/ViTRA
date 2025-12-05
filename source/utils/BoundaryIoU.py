@@ -92,11 +92,13 @@ class BoundaryIoU(Metric):
         preds_oh = (
             torch.nn.functional.one_hot(preds, num_classes=self.num_classes)
             .permute(0, 3, 1, 2)
+            .contiguous()
             .float()
         )
         target_oh = (
             torch.nn.functional.one_hot(target_safe, num_classes=self.num_classes)
             .permute(0, 3, 1, 2)
+            .contiguous()
             .float()
         )
 
