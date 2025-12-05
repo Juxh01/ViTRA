@@ -15,7 +15,7 @@ optimizer:
   lr_gamma: 0.9
   momentum: 0.9
   optimizer_str: "sgd"
-  batch_size_per_device: 256
+  batch_size_per_device: 512
   epochs: 50
 
   # Replicator settings
@@ -42,6 +42,6 @@ adversarial:
   epsilon: 0.00392 # 1/255
   norm: "Linf"
   steps: 50       
-  batch_size_per_device: 256
+  batch_size_per_device: 512
   
   
