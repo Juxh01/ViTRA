@@ -107,11 +107,13 @@ class BoundaryIoU(Metric):
 
         # Compute Inner Boundary Regions
         # P_d \cap P
-        pred_eroded = kornia.morphology.erosion(preds_oh, kernel)
+        pred_eroded = kornia.morphology.erosion(preds_oh, kernel, engine="convolution")
         pred_boundary = preds_oh - pred_eroded
 
         # G_d \cap G
-        target_eroded = kornia.morphology.erosion(target_oh, kernel)
+        target_eroded = kornia.morphology.erosion(
+            target_oh, kernel, engine="convolution"
+        )
         target_boundary = target_oh - target_eroded
 
         # Compute Intersection and Union
