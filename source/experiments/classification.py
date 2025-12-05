@@ -52,6 +52,7 @@ def main(cfg: DictConfig) -> None:
         config=config_dict,
         run=run,
     )
+    dist.barrier()
     if rank == 0:
         run.finish()
     dist.destroy_process_group()
