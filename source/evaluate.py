@@ -211,6 +211,7 @@ def evaluate_classification(model, device, config, run):
         version="standard",
         seed=config["general"]["seed"],
         device=device,
+        attacks_to_run=["apgd-ce"],
     )
     import autoattack.checks as checks
 
