@@ -65,6 +65,8 @@ class BoundaryIoU(Metric):
         preds: (N, H, W) integer tensor of class labels
         target: (N, H, W) integer tensor of ground truth labels (with ignore_index)
         """
+        preds = preds.detach()
+        target = target.detach()
 
         self.mIoU.update(preds, target)
         # Ensure inputs are on the same device and correct shape
