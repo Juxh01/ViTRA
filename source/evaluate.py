@@ -221,12 +221,12 @@ def evaluate_classification(model, device, config, run):
         images = images.to(device)
         targets = targets.to(device)
         with torch.no_grad():
-            clean_outputs = model(images)
+            clean_outputs = wrapped_model(images.clone())
         adv_images = adversary.run_standard_evaluation(
             images, targets, bs=images.size(0)
         )
         with torch.no_grad():
-            adv_outputs = model(adv_images)
+            adv_outputs = wrapped_model(adv_images)
         val_metrics.update(clean_outputs, targets)
         adv_metrics.update(adv_outputs, targets)
 
