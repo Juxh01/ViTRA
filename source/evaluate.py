@@ -208,7 +208,7 @@ def evaluate_classification(model, device, config, run):
         model=wrapped_model,
         norm=config["adversarial"]["norm"],
         eps=config["adversarial"]["epsilon"],
-        version="standard",
+        version="custom",
         seed=config["general"]["seed"],
         device=device,
         attacks_to_run=["apgd-ce"],
