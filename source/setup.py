@@ -258,7 +258,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
         batch_size=batch_size,
         sampler=train_sampler,
         num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 4)
+            os.environ.get("SLURM_CPUS_PER_TASK", 8)
         ),  # TODO: dynamic value?
         shuffle=False,  # Shuffle is done by sampler
     )
@@ -267,7 +267,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
         batch_size=2 * batch_size,
         sampler=val_sampler,
         num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 4)
+            os.environ.get("SLURM_CPUS_PER_TASK", 8)
         ),  # TODO: dynamic value?
         shuffle=False,
     )
@@ -443,7 +443,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         batch_size=batch_size,
         sampler=train_sampler,
         num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 4)
+            os.environ.get("SLURM_CPUS_PER_TASK", 8)
         ),  # TODO: dynamic value?
         shuffle=False,  # Shuffle is done by sampler
     )
@@ -452,7 +452,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         batch_size=2 * batch_size,
         sampler=val_sampler,
         num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 4)
+            os.environ.get("SLURM_CPUS_PER_TASK", 8)
         ),  # TODO: dynamic value?
         shuffle=False,
     )

@@ -71,6 +71,9 @@ def get_metrics(task: str, device: str):
                     boundary_scale=0.02,
                     min_pixel_dist=1,
                 ),
+                "ece": MulticlassCalibrationError(
+                    num_classes=21, n_bins=15, norm="l1", ignore_index=255
+                ),
             }
         )
         val_metrics = val_metrics.to(device)
