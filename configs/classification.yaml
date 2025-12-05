@@ -27,7 +27,7 @@ optimizer:
   compression_topk: 2
   compression_chunk: 64
   # Random
-  compression_rate: 0.25
+  compression_rate: 0.5
 
 distributed:
   nproc_per_node: 4
@@ -41,6 +41,6 @@ adversarial:
   enabled: true
   epsilon: 0.00392 # 1/255
   norm: "Linf"    
-  batch_size_per_device: 128
+  batch_size_per_device: 512
   
   

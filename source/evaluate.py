@@ -155,6 +155,15 @@ def evaluate_segmentation(model, device, config, run):
 
 def evaluate_classification(model, device, config, run):
     rank = int(os.environ["RANK"])
+
+    # --- Only run on Rank 0 ---
+    if rank != 0:
+        return None, None
+
+    # Unwrap DDP model to avoid overhead/sync issues during single-process eval
+    if hasattr(model, "module"):
+        model = model.module
+
     model.eval()
     _, val_metrics = get_metrics("classification", device)
     val_metrics.prefix = "best/val/"
@@ -163,6 +172,8 @@ def evaluate_classification(model, device, config, run):
     results_dict = {}
     val_metrics.reset()
     adv_metrics.reset()
+
+    # Using the same loading options as training to ensure compatibility
     state_dict = torch.load("best_model.pt", map_location="cpu")
     options = StateDictOptions(full_state_dict=True, cpu_offload=True)
     set_model_state_dict(model, model_state_dict=state_dict, options=options)
@@ -194,16 +205,27 @@ def evaluate_classification(model, device, config, run):
         transform=val_transforms,
     )
     val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
-    val_sampler = DistributedSampler(val_dataset, shuffle=False)
+
     val_loader = DataLoader(
         val_dataset,
         batch_size=config["adversarial"]["batch_size_per_device"],
-        sampler=val_sampler,
-        num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 4)
-        ),  # TODO: dynamic value?
-        shuffle=False,
+        shuffle=False,  # Sequential sampling
+        num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", 4)),
     )
+
+    # --- Collect all data to CPU first ---
+    print(f"Rank {rank}: Collecting validation data for AutoAttack...")
+    all_images = []
+    all_targets = []
+    for images, targets in tqdm(
+        val_loader, desc="Collecting Data", colour="blue", ncols=150
+    ):
+        all_images.append(images.cpu())
+        all_targets.append(targets.cpu())
+
+    x_test = torch.cat(all_images, dim=0)
+    y_test = torch.cat(all_targets, dim=0)
+
     adversary = AutoAttack(
         model=wrapped_model,
         norm=config["adversarial"]["norm"],
@@ -213,32 +235,52 @@ def evaluate_classification(model, device, config, run):
         device=device,
         attacks_to_run=["apgd-ce"],
     )
-    import autoattack.checks as checks
 
-    checks.check_dynamic = lambda *args, **kwargs: None
-    checks.check_randomized = lambda *args, **kwargs: None
-    ### Evaluation ###
-    for images, targets in tqdm(
-        val_loader, desc="Evaluating", disable=rank > 0, colour="green", ncols=150
-    ):
-        images = images.to(device)
-        targets = targets.to(device)
+    print(f"Rank {rank}: Running AutoAttack on {len(x_test)} images...")
 
-        with torch.no_grad():
-            clean_outputs = wrapped_model(images.clone())
-        adv_images = adversary.run_standard_evaluation(
-            images, targets, bs=config["adversarial"]["batch_size_per_device"]
-        )
-        with torch.no_grad():
-            adv_outputs = wrapped_model(adv_images)
-        val_metrics.update(clean_outputs, targets)
-        adv_metrics.update(adv_outputs, targets)
+    # --- Clean Evaluation ---
+    with torch.no_grad():
+        bs_eval = config["adversarial"]["batch_size_per_device"]
+        num_batches = (len(x_test) + bs_eval - 1) // bs_eval
+
+        for i in range(num_batches):
+            start_idx = i * bs_eval
+            end_idx = min((i + 1) * bs_eval, len(x_test))
+
+            # Move batch to device
+            batch_x = x_test[start_idx:end_idx].to(device)
+            batch_y = y_test[start_idx:end_idx].to(device)
+
+            clean_out = wrapped_model(batch_x)
+            val_metrics.update(clean_out, batch_y)
+
+    # --- Run Attack  ---
+    adv_images, adv_labels = adversary.run_standard_evaluation(
+        x_test,
+        y_test,
+        bs=config["adversarial"]["batch_size_per_device"],
+        return_labels=True,
+    )
+
+    # --- Adversarial Evaluation ---
+    with torch.no_grad():
+        for i in range(num_batches):
+            start_idx = i * bs_eval
+            end_idx = min((i + 1) * bs_eval, len(x_test))
+
+            batch_adv = adv_images[start_idx:end_idx].to(device)
+            batch_y = adv_labels[start_idx:end_idx].to(device)
+
+            adv_out = wrapped_model(batch_adv)
+            adv_metrics.update(adv_out, batch_y)
 
     val_metrics_dict = val_metrics.compute()
     adv_metrics_dict = adv_metrics.compute()
+
     if rank == 0:
         results_dict.update({k: v.item() for k, v in val_metrics_dict.items()})
         results_dict.update({k: v.item() for k, v in adv_metrics_dict.items()})
-        run.log(results_dict)
+        if run is not None:
+            run.log(results_dict)
 
     return val_metrics, adv_metrics
