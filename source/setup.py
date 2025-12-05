@@ -264,7 +264,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=2 * batch_size,
+        batch_size=batch_size,
         sampler=val_sampler,
         num_workers=int(
             os.environ.get("SLURM_CPUS_PER_TASK", 8)

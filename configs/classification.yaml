@@ -16,7 +16,7 @@ optimizer:
   momentum: 0.9
   optimizer_str: "sgd"
   batch_size_per_device: 512
-  epochs: 50
+  epochs: 15
 
   # Replicator settings
   replicate_every: 1
@@ -24,7 +24,7 @@ optimizer:
   shards: 2
   repl: "deto-demo"
   # Demo
-  compression_topk: 32
+  compression_topk: 16
   compression_chunk: 64
   # Random
   compression_rate: None
