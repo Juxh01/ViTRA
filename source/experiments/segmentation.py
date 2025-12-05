@@ -14,9 +14,7 @@ from source.train import train
 
 @hydra.main(config_path="../../configs", config_name="segmentation", version_base="1.1")
 def main(cfg: DictConfig) -> None:
-    warnings.filterwarnings(
-        "ignore", message=".*Using a non-tuple sequence for multidimensional indexing.*"
-    )
+    warnings.filterwarnings("ignore", message=".*Using a non-tuple sequence*")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     config_dict = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
     # Setup the segmentation environment
