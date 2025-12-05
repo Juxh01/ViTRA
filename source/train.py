@@ -12,12 +12,12 @@ from torchmetrics.classification import (
     MulticlassAccuracy,
     MulticlassAveragePrecision,
     MulticlassCalibrationError,
-    MulticlassF1Score,
     MulticlassJaccardIndex,
 )
 from tqdm import tqdm
 
 from source.utils.BestModelLogger import BestModelLogger
+from source.utils.BoundaryIoU import BoundaryIoU
 from source.utils.HausdorffDistance95 import HausdorffDistance95
 
 
@@ -53,9 +53,15 @@ def get_metrics(task: str, device: str):
         metrics = MetricCollection(
             {
                 "mIoU": MulticlassJaccardIndex(num_classes=21, ignore_index=255),
-                "dice": MulticlassF1Score(
-                    num_classes=21, ignore_index=255, average="macro"
+                "bIoU": BoundaryIoU(
+                    num_classes=21,
+                    ignore_index=255,
+                    boundary_scale=0.02,
+                    min_pixel_dist=1,
                 ),
+                "pixel_ece": MulticlassCalibrationError(
+                    num_classes=21, n_bins=15, norm="l1"
+                ),  # from "On Calibration of Modern Neural Networks"
             }
         )
     else:
