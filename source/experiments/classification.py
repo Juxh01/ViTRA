@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import hydra
 import torch
@@ -14,6 +15,9 @@ from source.train import train
     config_path="../../configs", config_name="classification", version_base="1.1"
 )
 def main(cfg: DictConfig) -> None:
+    warnings.filterwarnings(
+        "ignore", message=".*Using a non-tuple sequence for multidimensional indexing.*"
+    )
     device = "cuda" if torch.cuda.is_available() else "cpu"
     config_dict = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
     # Setup the classification environment
