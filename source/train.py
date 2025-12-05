@@ -53,12 +53,6 @@ def get_metrics(task: str, device: str):
         metrics = MetricCollection(
             {
                 "mIoU": MulticlassJaccardIndex(num_classes=21, ignore_index=255),
-                "bIoU": BoundaryIoU(
-                    num_classes=21,
-                    ignore_index=255,
-                    boundary_scale=0.02,
-                    min_pixel_dist=1,
-                ),
             }
         )
     else:
@@ -71,6 +65,12 @@ def get_metrics(task: str, device: str):
         val_metrics.add_metrics(
             {
                 "hd95": HausdorffDistance95(num_classes=21, ignore_index=255),
+                "bIoU": BoundaryIoU(
+                    num_classes=21,
+                    ignore_index=255,
+                    boundary_scale=0.02,
+                    min_pixel_dist=1,
+                ),
             }
         )
         val_metrics = val_metrics.to(device)
