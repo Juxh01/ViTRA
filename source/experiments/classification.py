@@ -46,16 +46,16 @@ def main(cfg: DictConfig) -> None:
         run=run,
     )
     dist.barrier()
+    dist.destroy_process_group()
+    if rank != 0:
+        return
     evaluate_classification(
-        model=model,
         device=device,
         config=config_dict,
         run=run,
     )
-    dist.barrier()
     if rank == 0:
         run.finish()
-    dist.destroy_process_group()
 
 
 if __name__ == "__main__":

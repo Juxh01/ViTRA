@@ -12,6 +12,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torchvision import datasets, tv_tensors
 from torchvision.transforms import v2 as T
 from tqdm import tqdm
+from transformers import ViTConfig, ViTForImageClassification
 
 from source.train import get_metrics
 from source.utils.AdvAttack import apgd_largereps
@@ -153,17 +154,58 @@ def evaluate_segmentation(model, device, config, run):
     return val_metrics, adv_metrics
 
 
-def evaluate_classification(model, device, config, run):
+def evaluate_classification(device, config, run):
     rank = int(os.environ["RANK"])
 
     # --- Only run on Rank 0 ---
     if rank != 0:
         return None, None
 
-    # Unwrap DDP model to avoid overhead/sync issues during single-process eval
-    if hasattr(model, "module"):
-        model = model.module
+    print(f"Evaluate: Initializing fresh model for evaluation on {device}...")
 
+    # --- RECREATE MODEL FROM CONFIG  ---
+    # AutoAttack seems not to work in a ddp setting
+    # TODO: Refactor both: model setup and datasets
+    vit_base_config = ViTConfig(
+        hidden_size=768,
+        num_hidden_layers=12,
+        num_attention_heads=12,
+        intermediate_size=3072,
+        hidden_act="gelu",
+        hidden_dropout_prob=0.0,
+        attention_probs_dropout_prob=0.0,
+        initializer_range=0.02,
+        layer_norm_eps=1e-12,
+        image_size=224,
+        patch_size=16,
+        num_channels=3,
+        qkv_bias=True,
+        encoder_stride=16,
+        pooler_output_size=None,
+        pooler_act="tanh",
+        num_labels=100,
+    )
+
+    backbone_name = config["general"].get("backbone_name", None)
+    if backbone_name:
+        print(f"Initializing ViT with pretrained backbone: {backbone_name}")
+        model = ViTForImageClassification.from_pretrained(
+            backbone_name, num_labels=100, image_size=224, ignore_mismatched_sizes=True
+        )
+    else:
+        print("Initializing ViT from scratch (Random Weights)")
+        model = ViTForImageClassification(vit_base_config)
+
+    # --- LOAD WEIGHTS LOCALLY ---
+    print("Evaluate: Loading weights from best_model.pt...")
+    # These weights were saved with offload_to_cpu=True, so they are clean state dicts
+    state_dict = torch.load("best_model.pt", map_location="cpu")
+    model.load_state_dict(state_dict)
+
+    for param in model.parameters():
+        param.requires_grad = False
+
+    model.to(device)
     model.eval()
     _, val_metrics = get_metrics("classification", device)
     val_metrics.prefix = "best/val/"
@@ -173,17 +215,10 @@ def evaluate_classification(model, device, config, run):
     val_metrics.reset()
     adv_metrics.reset()
 
-    print(f"Rank {rank}: Loading model weights...")  # TODO: Deadlock here
-    state_dict = torch.load("best_model.pt", map_location="cpu")
-    model.load_state_dict(state_dict)
-    for param in model.parameters():
-        param.requires_grad = False
-
+    # Wrap for normalization
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
     wrapped_model = NormalizationWrapper(model, mean, std).to(device).eval()
-    for param in model.parameters():
-        param.requires_grad = False
 
     data_dir = config["general"].get("data_dir", "./data")
     val_transforms = T.Compose(
@@ -210,12 +245,12 @@ def evaluate_classification(model, device, config, run):
     val_loader = DataLoader(
         val_dataset,
         batch_size=config["adversarial"]["batch_size_per_device"],
-        shuffle=False,  # Sequential sampling
+        shuffle=False,
         num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", 4)),
     )
 
-    # --- Collect all data to CPU first ---
-    print(f"Rank {rank}: Collecting validation data for AutoAttack...")
+    # --- Collect Data ---
+    print("Evaluate: Collecting validation data...")
     all_images = []
     all_targets = []
     for images, targets in tqdm(
@@ -227,6 +262,7 @@ def evaluate_classification(model, device, config, run):
     x_test = torch.cat(all_images, dim=0)
     y_test = torch.cat(all_targets, dim=0)
 
+    # Setup AutoAttack
     adversary = AutoAttack(
         model=wrapped_model,
         norm=config["adversarial"]["norm"],
@@ -237,9 +273,9 @@ def evaluate_classification(model, device, config, run):
         attacks_to_run=["apgd-ce"],
     )
 
-    print(f"Rank {rank}: Running AutoAttack on {len(x_test)} images...")
+    print(f"Evaluate: Running AutoAttack on {len(x_test)} images...")
 
-    # --- Clean Evaluation ---
+    # --- Clean Evaluation (Batched) ---
     with torch.no_grad():
         bs_eval = config["adversarial"]["batch_size_per_device"]
         num_batches = (len(x_test) + bs_eval - 1) // bs_eval
@@ -247,15 +283,12 @@ def evaluate_classification(model, device, config, run):
         for i in range(num_batches):
             start_idx = i * bs_eval
             end_idx = min((i + 1) * bs_eval, len(x_test))
-
-            # Move batch to device
             batch_x = x_test[start_idx:end_idx].to(device)
             batch_y = y_test[start_idx:end_idx].to(device)
-
             clean_out = wrapped_model(batch_x)
             val_metrics.update(clean_out, batch_y)
 
-    # --- Run Attack  ---
+    # --- Run Attack ---
     adv_images, adv_labels = adversary.run_standard_evaluation(
         x_test,
         y_test,
@@ -263,25 +296,23 @@ def evaluate_classification(model, device, config, run):
         return_labels=True,
     )
 
-    # --- Adversarial Evaluation ---
+    # --- Adversarial Evaluation (Batched) ---
     with torch.no_grad():
         for i in range(num_batches):
             start_idx = i * bs_eval
             end_idx = min((i + 1) * bs_eval, len(x_test))
-
             batch_adv = adv_images[start_idx:end_idx].to(device)
             batch_y = adv_labels[start_idx:end_idx].to(device)
-
             adv_out = wrapped_model(batch_adv)
             adv_metrics.update(adv_out, batch_y)
 
     val_metrics_dict = val_metrics.compute()
     adv_metrics_dict = adv_metrics.compute()
 
-    if rank == 0:
-        results_dict.update({k: v.item() for k, v in val_metrics_dict.items()})
-        results_dict.update({k: v.item() for k, v in adv_metrics_dict.items()})
-        if run is not None:
-            run.log(results_dict)
+    results_dict.update({k: v.item() for k, v in val_metrics_dict.items()})
+    results_dict.update({k: v.item() for k, v in adv_metrics_dict.items()})
+
+    if run is not None:
+        run.log(results_dict)
 
     return val_metrics, adv_metrics
