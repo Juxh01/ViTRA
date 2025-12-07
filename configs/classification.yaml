@@ -16,7 +16,7 @@ optimizer:
   momentum: 0.9
   optimizer_str: "sgd"
   batch_size_per_device: 512
-  epochs: 15
+  epochs: 50
 
   # Replicator settings
   replicate_every: 1
