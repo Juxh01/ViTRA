@@ -187,7 +187,7 @@ def evaluate_classification(device, config, run):
         if rank == 0:
             print(f"Initializing ViT with pretrained backbone: {backbone_name}")
         model = ViTForImageClassification.from_pretrained(
-            backbone_name, num_labels=100, image_size=224, ignore_mismatched_sizes=True
+            backbone_name, num_labels=211, image_size=224, ignore_mismatched_sizes=True
         )
     else:
         if rank == 0:
