@@ -10,7 +10,7 @@ general:
 
 optimizer:
   # Optimizer settings
-  lr: 5e-5
+  lr: 1e-5
   lr_power: 0.9
   lr_factor: 10
   momentum: 0.9
