@@ -417,10 +417,10 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         # )
         print("Dowloading SBDDataset...")
         datasets.SBDataset(
-            root=data_dir, image_set="train", mode="segmentation", download=True
+            root=data_dir, image_set="train", mode="segmentation", download=False
         )
         datasets.SBDataset(
-            root=data_dir, image_set="val", mode="segmentation", download=True
+            root=data_dir, image_set="val", mode="segmentation", download=False
         )
 
     dist.barrier()  # Ensure that only one process downloads the dataset
