@@ -6,7 +6,7 @@ general:
   wandb_project: "ViTRA"
   experiment_name: ${name}
   task: "segmentation"
-  data_dir: "${hydra:runtime.cwd}/data"
+  data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
 
 optimizer:
   # Optimizer settings
