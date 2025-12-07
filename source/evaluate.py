@@ -320,7 +320,7 @@ def evaluate_classification(device, config, run):
             start_idx = i * bs_eval
             end_idx = min((i + 1) * bs_eval, len(x_test))
             batch_adv = adv_images[start_idx:end_idx].to(device)
-            batch_y = adv_labels[start_idx:end_idx].to(device)
+            batch_y = y_test[start_idx:end_idx].to(device)
             adv_out = wrapped_model(batch_adv)
             adv_metrics.update(adv_out, batch_y)
 
