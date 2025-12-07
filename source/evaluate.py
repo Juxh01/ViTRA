@@ -157,10 +157,6 @@ def evaluate_segmentation(model, device, config, run):
 def evaluate_classification(device, config, run):
     rank = int(os.environ["RANK"])
 
-    # --- Only run on Rank 0 ---
-    if rank != 0:
-        return None, None
-
     print(f"Evaluate: Initializing fresh model for evaluation on {device}...")
 
     # --- RECREATE MODEL FROM CONFIG  ---
@@ -241,12 +237,16 @@ def evaluate_classification(device, config, run):
         transform=val_transforms,
     )
     val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
+    val_sampler = DistributedSampler(val_dataset, shuffle=False)
 
     val_loader = DataLoader(
         val_dataset,
         batch_size=config["adversarial"]["batch_size_per_device"],
+        sampler=val_sampler,
+        num_workers=int(
+            os.environ.get("SLURM_CPUS_PER_TASK", 8)
+        ),  # TODO: dynamic value?
         shuffle=False,
-        num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", 4)),
     )
 
     # --- Collect Data ---
