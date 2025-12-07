@@ -369,9 +369,9 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             T.RandomRotation(degrees=(-10, 10)),
             T.RandomHorizontalFlip(p=0.5),
             T.RandomGrayscale(p=0.2),
-            T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
+            T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
             T.RandomApply(
-                [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.1
+                [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
             ),
             T.ToImage(),
             T.ToDtype(
