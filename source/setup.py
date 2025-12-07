@@ -362,17 +362,17 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
 
     train_transforms = T.Compose(
         [
-            T.RandomShortestSize(min_size=int(384 * 0.75), max_size=int(384 * 1.25)),
+            T.RandomShortestSize(min_size=int(384 * 0.5), max_size=int(384 * 2.0)),
             T.RandomCrop(
                 size=(384, 384), pad_if_needed=True, fill=0, padding_mode="constant"
             ),
-            T.RandomRotation(degrees=(-10, 10)),
+            T.RandomRotation(degrees=(-15, 15)),
             T.RandomHorizontalFlip(p=0.5),
-            T.RandomGrayscale(p=0.2),
-            T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-            T.RandomApply(
-                [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
-            ),
+            T.RandomGrayscale(p=0.05),
+            T.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1),
+            # T.RandomApply(
+            #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
+            # ),
             T.ToImage(),
             T.ToDtype(
                 dtype={
