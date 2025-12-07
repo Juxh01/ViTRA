@@ -235,7 +235,7 @@ def evaluate_classification(device, config, run):
     )
     val_dataset = datasets.Country211(
         root=data_dir,
-        split="val",
+        split="valid",
         download=False,
         transform=val_transforms,
     )

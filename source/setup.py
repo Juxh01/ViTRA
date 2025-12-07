@@ -229,7 +229,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
         )
         datasets.Country211(
             root=data_dir,
-            split="val",
+            split="valid",
             download=True,
         )
 
@@ -244,7 +244,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
     train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
     val_dataset = datasets.Country211(
         root=data_dir,
-        split="val",
+        split="valid",
         download=False,
         transform=val_transforms,
     )
