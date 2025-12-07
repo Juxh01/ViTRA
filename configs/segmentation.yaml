@@ -23,9 +23,9 @@ optimizer:
   replicate_every: 1
   skip_every: null
   shards: 2
-  repl: "deto-full"
+  repl: "deto-demo"
   # Demo
-  compression_topk: 32
+  compression_topk: 16
   compression_chunk: 64
   # Random
   compression_rate: None

@@ -173,7 +173,7 @@ def evaluate_classification(model, device, config, run):
     val_metrics.reset()
     adv_metrics.reset()
 
-    print(f"Rank {rank}: Loading model weights...")
+    print(f"Rank {rank}: Loading model weights...")  # TODO: Deadlock here
     state_dict = torch.load("best_model.pt", map_location="cpu")
     model.load_state_dict(state_dict)
     for param in model.parameters():

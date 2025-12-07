@@ -362,16 +362,16 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
 
     train_transforms = T.Compose(
         [
-            T.RandomShortestSize(min_size=int(384 * 0.5), max_size=int(384 * 2.0)),
+            T.RandomShortestSize(min_size=int(384 * 0.75), max_size=int(384 * 1.25)),
             T.RandomCrop(
                 size=(384, 384), pad_if_needed=True, fill=0, padding_mode="constant"
             ),
             T.RandomRotation(degrees=(-10, 10)),
             T.RandomHorizontalFlip(p=0.5),
             T.RandomGrayscale(p=0.2),
-            T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+            T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
             T.RandomApply(
-                [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
+                [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.1
             ),
             T.ToImage(),
             T.ToDtype(
@@ -402,34 +402,58 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     )
 
     if local_rank == 0:
-        print("Downloading VOCSegmentation dataset...")
-        datasets.VOCSegmentation(
-            root=data_dir,
-            year="2012",
-            image_set="train",
-            download=False,
+        # print("Downloading VOCSegmentation dataset...")
+        # datasets.VOCSegmentation(
+        #     root=data_dir,
+        #     year="2012",
+        #     image_set="train",
+        #     download=False,
+        # )
+        # datasets.VOCSegmentation(
+        #     root=data_dir,
+        #     year="2012",
+        #     image_set="val",
+        #     download=False,
+        # )
+        print("Dowloading SBDDataset...")
+        datasets.SBDataset(
+            root=data_dir, image_set="train", mode="segmentation", download=True
         )
-        datasets.VOCSegmentation(
-            root=data_dir,
-            year="2012",
-            image_set="val",
-            download=False,
+        datasets.SBDataset(
+            root=data_dir, image_set="val", mode="segmentation", download=True
         )
 
     dist.barrier()  # Ensure that only one process downloads the dataset
 
-    train_dataset = datasets.VOCSegmentation(
+    # train_dataset = datasets.VOCSegmentation(
+    #     root=data_dir,
+    #     year="2012",
+    #     image_set="train",
+    #     download=False,
+    #     transforms=train_transforms,
+    # )
+    # train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
+    # val_dataset = datasets.VOCSegmentation(
+    #     root=data_dir,
+    #     year="2012",
+    #     image_set="val",
+    #     download=False,
+    #     transforms=val_transforms,
+    # )
+    # val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
+
+    train_dataset = datasets.SBDataset(
         root=data_dir,
-        year="2012",
         image_set="train",
+        mode="segmentation",
         download=False,
         transforms=train_transforms,
     )
     train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
-    val_dataset = datasets.VOCSegmentation(
+    val_dataset = datasets.SBDataset(
         root=data_dir,
-        year="2012",
         image_set="val",
+        mode="segmentation",
         download=False,
         transforms=val_transforms,
     )
