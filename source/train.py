@@ -39,14 +39,14 @@ def get_metrics(task: str, device: str):
         metrics = MetricCollection(
             {
                 "acc": MulticlassAccuracy(
-                    num_classes=100,
+                    num_classes=211,
                 ),
-                "acc_top5": MulticlassAccuracy(num_classes=100, top_k=5),
+                "acc_top5": MulticlassAccuracy(num_classes=211, top_k=5),
                 "ece": MulticlassCalibrationError(
-                    num_classes=100, n_bins=15, norm="l1"
+                    num_classes=211, n_bins=15, norm="l1"
                 ),  # from "On Calibration of Modern Neural Networks"
-                "map": MulticlassAveragePrecision(num_classes=100, average="macro"),
-                "min_acc": MinClassAccuracy(num_classes=100, average=None),
+                "map": MulticlassAveragePrecision(num_classes=211, average="macro"),
+                "min_acc": MinClassAccuracy(num_classes=211, average=None),
             }
         )
     elif task == "segmentation":
