@@ -233,10 +233,10 @@ def evaluate_classification(device, config, run):
             ),
         ]
     )
-    val_dataset = datasets.CIFAR100(
+    val_dataset = datasets.Country211(
         root=data_dir,
-        train=False,
-        download=True,
+        split="val",
+        download=False,
         transform=val_transforms,
     )
     val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)

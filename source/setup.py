@@ -222,30 +222,30 @@ def setup_classification(device: str, config: Dict[str, Any]):
 
     if local_rank == 0:
         print("Downloading CIFAR100 dataset...")
-        datasets.CIFAR100(
+        datasets.Country211(
             root=data_dir,
-            train=True,
             download=True,
+            split="train",
         )
-        datasets.CIFAR100(
+        datasets.Country211(
             root=data_dir,
-            train=False,
+            split="val",
             download=True,
         )
 
     dist.barrier()  # Ensure that only one process downloads the dataset
 
-    train_dataset = datasets.CIFAR100(
+    train_dataset = datasets.Country211(
         root=data_dir,
-        train=True,
-        download=True,
+        split="train",
+        download=False,
         transform=train_transforms,
     )
     train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
-    val_dataset = datasets.CIFAR100(
+    val_dataset = datasets.Country211(
         root=data_dir,
-        train=False,
-        download=True,
+        split="val",
+        download=False,
         transform=val_transforms,
     )
     val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
