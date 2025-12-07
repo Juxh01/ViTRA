@@ -177,7 +177,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
         encoder_stride=16,
         pooler_output_size=None,  # Defaults to hidden_size
         pooler_act="tanh",
-        num_labels=100,
+        num_labels=211,
     )
     backbone_name = config["general"].get("backbone_name", None)
     if backbone_name:

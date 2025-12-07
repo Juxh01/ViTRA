@@ -179,7 +179,7 @@ def evaluate_classification(device, config, run):
         encoder_stride=16,
         pooler_output_size=None,
         pooler_act="tanh",
-        num_labels=100,
+        num_labels=211,
     )
 
     backbone_name = config["general"].get("backbone_name", None)
