@@ -88,9 +88,9 @@ def evaluate_segmentation(model, device, config, run):
             # No normalization for adversarial attack
         ],
     )
-    val_dataset = datasets.VOCSegmentation(
+    val_dataset = datasets.SBDataset(
         root=data_dir,
-        year="2012",
+        mode="segmentation",
         image_set="val",
         download=False,
         transforms=val_transforms,

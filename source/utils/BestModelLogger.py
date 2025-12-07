@@ -32,10 +32,10 @@ class BestModelLogger:
 
         if self.task == "segmentation":
             # Initialize the dataset without transforms
-            self.raw_dataset = datasets.VOCSegmentation(
+            self.raw_dataset = datasets.SBDataset(
                 root=data_dir,
-                year="2012",
                 image_set="val",
+                mode="segmentation",
                 download=False,
                 transform=None,
             )
