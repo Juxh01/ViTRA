@@ -37,7 +37,7 @@ class BestModelLogger:
                 image_set="val",
                 mode="segmentation",
                 download=False,
-                transform=None,
+                transforms=None,
             )
 
             self.fixed_raw_data = []
