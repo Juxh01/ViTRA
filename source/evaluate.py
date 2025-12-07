@@ -156,8 +156,8 @@ def evaluate_segmentation(model, device, config, run):
 
 def evaluate_classification(device, config, run):
     rank = int(os.environ["RANK"])
-
-    print(f"Evaluate: Initializing fresh model for evaluation on {device}...")
+    if rank == 0:
+        print(f"Evaluate: Initializing fresh model for evaluation on {device}...")
 
     # --- RECREATE MODEL FROM CONFIG  ---
     # AutoAttack seems not to work in a ddp setting
@@ -184,16 +184,19 @@ def evaluate_classification(device, config, run):
 
     backbone_name = config["general"].get("backbone_name", None)
     if backbone_name:
-        print(f"Initializing ViT with pretrained backbone: {backbone_name}")
+        if rank == 0:
+            print(f"Initializing ViT with pretrained backbone: {backbone_name}")
         model = ViTForImageClassification.from_pretrained(
             backbone_name, num_labels=100, image_size=224, ignore_mismatched_sizes=True
         )
     else:
-        print("Initializing ViT from scratch (Random Weights)")
+        if rank == 0:
+            print("Initializing ViT from scratch (Random Weights)")
         model = ViTForImageClassification(vit_base_config)
 
     # --- LOAD WEIGHTS LOCALLY ---
-    print("Evaluate: Loading weights from best_model.pt...")
+    if rank == 0:
+        print("Evaluate: Loading weights from best_model.pt...")
     # These weights were saved with offload_to_cpu=True, so they are clean state dicts
     state_dict = torch.load("best_model.pt", map_location="cpu")
     model.load_state_dict(state_dict)
@@ -250,7 +253,8 @@ def evaluate_classification(device, config, run):
     )
 
     # --- Collect Data ---
-    print("Evaluate: Collecting validation data...")
+    if rank == 0:
+        print("Evaluate: Collecting validation data...")
     all_images = []
     all_targets = []
     for images, targets in tqdm(
@@ -263,17 +267,31 @@ def evaluate_classification(device, config, run):
     y_test = torch.cat(all_targets, dim=0)
 
     # Setup AutoAttack
-    adversary = AutoAttack(
-        model=wrapped_model,
-        norm=config["adversarial"]["norm"],
-        eps=config["adversarial"]["epsilon"],
-        version="custom",
-        seed=config["general"]["seed"],
-        device=device,
-        attacks_to_run=["apgd-ce"],
-    )
+    if rank == 0:
+        adversary = AutoAttack(
+            model=wrapped_model,
+            norm=config["adversarial"]["norm"],
+            eps=config["adversarial"]["epsilon"],
+            version="custom",
+            seed=config["general"]["seed"],
+            device=device,
+            attacks_to_run=["apgd-ce"],
+            verbose=True,
+        )
+    else:
+        adversary = AutoAttack(
+            model=wrapped_model,
+            norm=config["adversarial"]["norm"],
+            eps=config["adversarial"]["epsilon"],
+            version="custom",
+            seed=config["general"]["seed"],
+            device=device,
+            attacks_to_run=["apgd-ce"],
+            verbose=False,
+        )
 
-    print(f"Evaluate: Running AutoAttack on {len(x_test)} images...")
+    if rank == 0:
+        print(f"Evaluate: Running AutoAttack on {len(x_test)} images...")
 
     # --- Clean Evaluation (Batched) ---
     with torch.no_grad():
