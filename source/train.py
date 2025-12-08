@@ -27,7 +27,12 @@ class MinClassAccuracy(MulticlassAccuracy):
         return torch.min(per_class_acc)
 
 
-def get_metrics(task: str, device: str):
+# TODO: Refactor num_classes hardcoding
+def get_metrics(
+    task: str,
+    device: str,
+    num_classes: int,
+):
     """
     Get the appropriate metrics for the given task.
     Sets the metrics to complement each other well.
@@ -39,20 +44,24 @@ def get_metrics(task: str, device: str):
         metrics = MetricCollection(
             {
                 "acc": MulticlassAccuracy(
-                    num_classes=211,
+                    num_classes=num_classes,
                 ),
-                "acc_top5": MulticlassAccuracy(num_classes=211, top_k=5),
+                "acc_top5": MulticlassAccuracy(num_classes=num_classes, top_k=5),
                 "ece": MulticlassCalibrationError(
-                    num_classes=211, n_bins=15, norm="l1"
+                    num_classes=num_classes, n_bins=15, norm="l1"
                 ),  # from "On Calibration of Modern Neural Networks"
-                "map": MulticlassAveragePrecision(num_classes=211, average="macro"),
-                "min_acc": MinClassAccuracy(num_classes=211, average=None),
+                "map": MulticlassAveragePrecision(
+                    num_classes=num_classes, average="macro"
+                ),
+                "min_acc": MinClassAccuracy(num_classes=num_classes, average=None),
             }
         )
     elif task == "segmentation":
         metrics = MetricCollection(
             {
-                "mIoU": MulticlassJaccardIndex(num_classes=21, ignore_index=255),
+                "mIoU": MulticlassJaccardIndex(
+                    num_classes=num_classes, ignore_index=255
+                ),
             }
         )
     else:
@@ -64,15 +73,15 @@ def get_metrics(task: str, device: str):
     if task == "segmentation":
         val_metrics.add_metrics(
             {
-                "hd95": HausdorffDistance95(num_classes=21, ignore_index=255),
+                "hd95": HausdorffDistance95(num_classes=num_classes, ignore_index=255),
                 "bIoU": BoundaryIoU(
-                    num_classes=21,
+                    num_classes=num_classes,
                     ignore_index=255,
                     boundary_scale=0.02,
                     min_pixel_dist=1,
                 ),
                 "ece": MulticlassCalibrationError(
-                    num_classes=21, n_bins=15, norm="l1", ignore_index=255
+                    num_classes=num_classes, n_bins=15, norm="l1", ignore_index=255
                 ),
             }
         )
@@ -107,7 +116,9 @@ def train(
     num_epochs = config["optimizer"]["epochs"]
     task = config["general"]["task"]
 
-    train_metrics, val_metrics = get_metrics(task, device)
+    train_metrics, val_metrics = get_metrics(
+        task, device, num_classes=config["general"]["num_classes"]
+    )
     train_loss_metric = MeanMetric().to(device)
     val_loss_metric = MeanMetric().to(device)
 

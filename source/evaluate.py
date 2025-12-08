@@ -57,7 +57,9 @@ class NormalizationWrapper(nn.Module):
 def evaluate_segmentation(model, device, config, run):
     rank = int(os.environ["RANK"])
     model.eval()
-    _, val_metrics = get_metrics("segmentation", device)
+    _, val_metrics = get_metrics(
+        "segmentation", device, num_classes=config["general"]["num_classes"]
+    )
     val_metrics.prefix = "best/val/"
     adv_metrics = val_metrics.clone(prefix="best/adv/").to(device)
 
@@ -153,7 +155,9 @@ def evaluate_classification(device, config, run):
 
     model.to(device)
     model.eval()
-    _, val_metrics = get_metrics("classification", device)
+    _, val_metrics = get_metrics(
+        "classification", device, num_classes=config["general"]["num_classes"]
+    )
     val_metrics.prefix = "best/val/"
     adv_metrics = val_metrics.clone(prefix="best/adv/").to(device)
 
