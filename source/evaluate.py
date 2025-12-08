@@ -9,11 +9,9 @@ from torch.distributed.checkpoint.state_dict import (
 )
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-from torchvision import tv_tensors
-from torchvision.transforms import v2 as T
 from tqdm import tqdm
 
-from source.setup import get_dataset, get_ViT
+from source.setup import get_dataset, get_transform, get_ViT
 from source.train import get_metrics
 from source.utils.AdvAttack import apgd_largereps
 
@@ -73,21 +71,8 @@ def evaluate_segmentation(model, device, config, run):
         param.requires_grad = False
 
     # Get new validation dataloader with no normalization for adversarial attack
-    val_transforms = T.Compose(
-        [
-            T.Resize(size=(384, 384)),
-            T.ToImage(),
-            T.ToDtype(
-                dtype={
-                    tv_tensors.Image: torch.float32,
-                    tv_tensors.Mask: torch.int64,
-                    "others": None,
-                },
-                scale=True,
-            ),
-            # No normalization for adversarial attack
-        ],
-    )
+    val_transforms = get_transform(config, split="valid", add_normalize=False)
+
     val_dataset = get_dataset(config, split="val", transforms=val_transforms)
     val_sampler = DistributedSampler(val_dataset, shuffle=False)
     val_loader = DataLoader(
@@ -101,6 +86,7 @@ def evaluate_segmentation(model, device, config, run):
     )
 
     # Wrap Model
+    # TODO: Refactor
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
     wrapped_model = NormalizationWrapper(model, mean, std).to(device).eval()
@@ -176,23 +162,12 @@ def evaluate_classification(device, config, run):
     adv_metrics.reset()
 
     # Wrap for normalization
+    # TODO: Refactor
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
     wrapped_model = NormalizationWrapper(model, mean, std).to(device).eval()
 
-    val_transforms = T.Compose(
-        [
-            T.Resize(size=(224, 224)),
-            T.ToImage(),
-            T.ToDtype(
-                dtype={
-                    tv_tensors.Image: torch.float32,
-                    "others": None,
-                },
-                scale=True,
-            ),
-        ]
-    )
+    val_transforms = get_transform(config, split="valid", add_normalize=False)
     val_dataset = get_dataset(config, split="val", transforms=val_transforms)
     val_sampler = DistributedSampler(val_dataset, shuffle=False)
 

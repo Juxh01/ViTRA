@@ -133,6 +133,104 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
     return dataset
 
 
+def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True):
+    task = config["general"]["task"]
+    if task == "classification":
+        if split == "train":
+            transforms = T.Compose(
+                [
+                    T.RandomResizedCrop(size=(224, 224), scale=(0.5, 2.0)),
+                    T.RandomHorizontalFlip(),
+                    T.ToImage(),
+                    T.ToDtype(
+                        dtype={
+                            tv_tensors.Image: torch.float32,
+                            "others": None,
+                        },
+                        scale=True,
+                    ),
+                ]
+            )
+        else:
+            transforms = T.Compose(
+                [
+                    T.Resize(size=(224, 224)),
+                    T.ToImage(),
+                    T.ToDtype(
+                        dtype={
+                            tv_tensors.Image: torch.float32,
+                            "others": None,
+                        },
+                        scale=True,
+                    ),
+                ]
+            )
+
+    elif task == "segmentation":
+        if split == "train":
+            transforms = T.Compose(
+                [
+                    T.RandomShortestSize(
+                        min_size=int(384 * 0.5), max_size=int(384 * 2.0)
+                    ),
+                    T.RandomCrop(
+                        size=(384, 384),
+                        pad_if_needed=True,
+                        fill=0,
+                        padding_mode="constant",
+                    ),
+                    T.RandomRotation(degrees=(-15, 15)),
+                    T.RandomHorizontalFlip(p=0.5),
+                    T.RandomGrayscale(p=0.05),
+                    T.ColorJitter(
+                        brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1
+                    ),
+                    # T.RandomApply(
+                    #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
+                    # ),
+                    T.ToImage(),
+                    T.ToDtype(
+                        dtype={
+                            tv_tensors.Image: torch.float32,
+                            tv_tensors.Mask: torch.int64,
+                            "others": None,
+                        },
+                        scale=True,
+                    ),
+                ]
+            )
+        else:
+            transforms = T.Compose(
+                [
+                    T.Resize(size=(384, 384)),
+                    T.ToImage(),
+                    T.ToDtype(
+                        dtype={
+                            tv_tensors.Image: torch.float32,
+                            tv_tensors.Mask: torch.int64,
+                            "others": None,
+                        },
+                        scale=True,
+                    ),
+                ],
+            )
+    else:
+        raise ValueError(f"Unsupported task: {task}")
+    if add_normalize:
+        if task == "classification":
+            normalize = T.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+        elif task == "segmentation":
+            normalize = T.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+        else:
+            raise ValueError(f"Unsupported task: {task}")
+        transforms = T.Compose([transforms, normalize])
+    return transforms
+
+
 def get_ViT(config: Dict[str, Any]):
     task = config["general"]["task"]
     backbone_name = config["general"].get("backbone_name", None)
@@ -313,35 +411,8 @@ def setup_classification(device: str, config: Dict[str, Any]):
     model = get_ViT(config)
     model.to(device)
 
-    train_transforms = T.Compose(
-        [
-            T.RandomResizedCrop(size=(224, 224), scale=(0.5, 2.0)),
-            T.RandomHorizontalFlip(),
-            T.ToImage(),
-            T.ToDtype(
-                dtype={
-                    tv_tensors.Image: torch.float32,
-                    "others": None,
-                },
-                scale=True,
-            ),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-    val_transforms = T.Compose(
-        [
-            T.Resize(size=(224, 224)),
-            T.ToImage(),
-            T.ToDtype(
-                dtype={
-                    tv_tensors.Image: torch.float32,
-                    "others": None,
-                },
-                scale=True,
-            ),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
+    train_transforms = get_transform(config, split="train", add_normalize=True)
+    val_transforms = get_transform(config, split="valid", add_normalize=True)
 
     train_dataset = get_dataset(config, split="train", transforms=train_transforms)
 
@@ -389,46 +460,8 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     model = get_ViT(config)
     model.to(device)
 
-    train_transforms = T.Compose(
-        [
-            T.RandomShortestSize(min_size=int(384 * 0.5), max_size=int(384 * 2.0)),
-            T.RandomCrop(
-                size=(384, 384), pad_if_needed=True, fill=0, padding_mode="constant"
-            ),
-            T.RandomRotation(degrees=(-15, 15)),
-            T.RandomHorizontalFlip(p=0.5),
-            T.RandomGrayscale(p=0.05),
-            T.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1),
-            # T.RandomApply(
-            #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
-            # ),
-            T.ToImage(),
-            T.ToDtype(
-                dtype={
-                    tv_tensors.Image: torch.float32,
-                    tv_tensors.Mask: torch.int64,
-                    "others": None,
-                },
-                scale=True,
-            ),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-    val_transforms = T.Compose(
-        [
-            T.Resize(size=(384, 384)),
-            T.ToImage(),
-            T.ToDtype(
-                dtype={
-                    tv_tensors.Image: torch.float32,
-                    tv_tensors.Mask: torch.int64,
-                    "others": None,
-                },
-                scale=True,
-            ),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ],
-    )
+    train_transforms = get_transform(config, split="train", add_normalize=True)
+    val_transforms = get_transform(config, split="valid", add_normalize=True)
 
     train_dataset = get_dataset(config, split="train", transforms=train_transforms)
     val_dataset = get_dataset(config, split="valid", transforms=val_transforms)
