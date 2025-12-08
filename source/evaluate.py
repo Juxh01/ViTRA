@@ -9,11 +9,12 @@ from torch.distributed.checkpoint.state_dict import (
 )
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-from torchvision import datasets, tv_tensors
+from torchvision import tv_tensors
 from torchvision.transforms import v2 as T
 from tqdm import tqdm
 from transformers import ViTConfig, ViTForImageClassification
 
+from source.setup import get_dataset
 from source.train import get_metrics
 from source.utils.AdvAttack import apgd_largereps
 
@@ -73,7 +74,6 @@ def evaluate_segmentation(model, device, config, run):
         param.requires_grad = False
 
     # Get new validation dataloader with no normalization for adversarial attack
-    data_dir = config["general"].get("data_dir", "./data")
     val_transforms = T.Compose(
         [
             T.Resize(size=(384, 384)),
@@ -89,14 +89,7 @@ def evaluate_segmentation(model, device, config, run):
             # No normalization for adversarial attack
         ],
     )
-    val_dataset = datasets.SBDataset(
-        root=data_dir,
-        mode="segmentation",
-        image_set="val",
-        download=False,
-        transforms=val_transforms,
-    )
-    val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
+    val_dataset = get_dataset(config, split="val", transforms=val_transforms)
     val_sampler = DistributedSampler(val_dataset, shuffle=False)
     val_loader = DataLoader(
         val_dataset,
@@ -219,7 +212,6 @@ def evaluate_classification(device, config, run):
     std = [0.229, 0.224, 0.225]
     wrapped_model = NormalizationWrapper(model, mean, std).to(device).eval()
 
-    data_dir = config["general"].get("data_dir", "./data")
     val_transforms = T.Compose(
         [
             T.Resize(size=(224, 224)),
@@ -233,13 +225,7 @@ def evaluate_classification(device, config, run):
             ),
         ]
     )
-    val_dataset = datasets.Country211(
-        root=data_dir,
-        split="valid",
-        download=False,
-        transform=val_transforms,
-    )
-    val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
+    val_dataset = get_dataset(config, split="val", transforms=val_transforms)
     val_sampler = DistributedSampler(val_dataset, shuffle=False)
 
     val_loader = DataLoader(

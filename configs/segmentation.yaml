@@ -7,6 +7,8 @@ general:
   experiment_name: ${name}
   task: "segmentation"
   data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
+  dataset_name: "SBDataset"
+  num_classes: 21
 
 optimizer:
   # Optimizer settings

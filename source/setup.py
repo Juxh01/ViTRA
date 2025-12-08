@@ -21,7 +21,7 @@ from torch.distributed.fsdp import (
     MixedPrecision,
 )
 from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
-from torch.optim.lr_scheduler import LinearLR, PolynomialLR, StepLR
+from torch.optim.lr_scheduler import LinearLR, PolynomialLR
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torchvision import datasets, tv_tensors
@@ -62,32 +62,74 @@ def setup_process_group(device: str):
 
 def steup_lr_scheduler(optim, config: Dict[str, Any]):
     optim_config = config["optimizer"]
-    task = config["general"]["task"]
-    if task == "classification":
-        scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
-    elif task == "segmentation":
-        total_epochs = optim_config["epochs"]
-        warmup_epochs = optim_config["warmup_epochs"]
-        main_scheduler = PolynomialLR(
-            optim,
-            total_iters=total_epochs - warmup_epochs,
-            power=optim_config["lr_power"],
-            last_epoch=-1,
-        )
-        warmup_scheduler = LinearLR(
-            optim,
-            start_factor=0.001,
-            end_factor=1.0,
-            total_iters=warmup_epochs,
-        )
-        scheduler = torch.optim.lr_scheduler.SequentialLR(
-            optim,
-            schedulers=[warmup_scheduler, main_scheduler],
-            milestones=[warmup_epochs],
-        )
-    else:
-        raise ValueError(f"Unknown task: {task}")
+    # task = config["general"]["task"]
+    # if task == "classification":
+    #     scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
+    # elif task == "segmentation":
+    total_epochs = optim_config["epochs"]
+    warmup_epochs = optim_config["warmup_epochs"]
+    main_scheduler = PolynomialLR(
+        optim,
+        total_iters=total_epochs - warmup_epochs,
+        power=optim_config["lr_power"],
+        last_epoch=-1,
+    )
+    warmup_scheduler = LinearLR(
+        optim,
+        start_factor=0.001,
+        end_factor=1.0,
+        total_iters=warmup_epochs,
+    )
+    scheduler = torch.optim.lr_scheduler.SequentialLR(
+        optim,
+        schedulers=[warmup_scheduler, main_scheduler],
+        milestones=[warmup_epochs],
+    )
+    # else:
+    #     raise ValueError(f"Unknown task: {task}")
     return scheduler
+
+
+def get_dataset(config: Dict[str, Any], split: str, transforms=None):
+    data_dir = config["general"]["data_dir"]
+    dataset_name = config["general"]["dataset_name"]
+    try:
+        if dataset_name == "Country211":
+            dataset = datasets.Country211(
+                root=data_dir,
+                split=split,
+                download=False,
+                transform=transforms,
+            )
+        elif dataset_name == "SBDataset":
+            dataset = datasets.SBDataset(
+                root=data_dir,
+                image_set=split,
+                mode="segmentation",
+                download=False,
+                transforms=transforms,
+            )
+        elif dataset_name == "CIFAR100":
+            dataset = datasets.CIFAR100(
+                root=data_dir,
+                train=(split == "train"),
+                download=False,
+                transform=transforms,
+            )
+        elif dataset_name == "VOCSegmentation":
+            dataset = datasets.VOCSegmentation(
+                root=data_dir,
+                year="2012",
+                image_set=split,
+                download=False,
+                transforms=transforms,
+            )
+        else:
+            raise ValueError(f"Unknown dataset: {dataset_name}")
+    except Exception as e:
+        raise RuntimeError(f"Datasets must be downloaded before setup. Error: {e}")
+    dataset = datasets.wrap_dataset_for_transforms_v2(dataset)
+    return dataset
 
 
 def setup_distributed_training(
@@ -156,10 +198,6 @@ def setup_classification(device: str, config: Dict[str, Any]):
     seed = config["general"]["seed"]
     set_seed(seed)
 
-    # Get rank
-    local_rank = int(os.environ.get("LOCAL_RANK", 0))
-    data_dir = config["general"].get("data_dir", "./data")
-
     vit_base_config = ViTConfig(
         hidden_size=768,
         num_hidden_layers=12,
@@ -220,35 +258,15 @@ def setup_classification(device: str, config: Dict[str, Any]):
         ]
     )
 
-    if local_rank == 0:
-        print("Downloading CIFAR100 dataset...")
-        datasets.Country211(
-            root=data_dir,
-            download=True,
-            split="train",
-        )
-        datasets.Country211(
-            root=data_dir,
-            split="valid",
-            download=True,
-        )
+    # train_dataset = datasets.Country211(
+    #     root=data_dir,
+    #     split="train",
+    #     download=False,
+    #     transform=train_transforms,
+    # )
+    train_dataset = get_dataset(config, split="train", transforms=train_transforms)
 
-    dist.barrier()  # Ensure that only one process downloads the dataset
-
-    train_dataset = datasets.Country211(
-        root=data_dir,
-        split="train",
-        download=False,
-        transform=train_transforms,
-    )
-    train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
-    val_dataset = datasets.Country211(
-        root=data_dir,
-        split="valid",
-        download=False,
-        transform=val_transforms,
-    )
-    val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
+    val_dataset = get_dataset(config, split="valid", transforms=val_transforms)
 
     train_sampler = DistributedSampler(train_dataset, shuffle=True)
     val_sampler = DistributedSampler(val_dataset, shuffle=False)
@@ -289,9 +307,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     seed = config["general"]["seed"]
     set_seed(seed)
 
-    # Get rank
-    local_rank = int(os.environ.get("LOCAL_RANK", 0))
-    data_dir = config["general"].get("data_dir", "./data")
     backbone_name = config["general"].get("backbone_name", None)
 
     if backbone_name:
@@ -401,63 +416,8 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         ],
     )
 
-    if local_rank == 0:
-        # print("Downloading VOCSegmentation dataset...")
-        # datasets.VOCSegmentation(
-        #     root=data_dir,
-        #     year="2012",
-        #     image_set="train",
-        #     download=False,
-        # )
-        # datasets.VOCSegmentation(
-        #     root=data_dir,
-        #     year="2012",
-        #     image_set="val",
-        #     download=False,
-        # )
-        print("Dowloading SBDDataset...")
-        datasets.SBDataset(
-            root=data_dir, image_set="train", mode="segmentation", download=False
-        )
-        datasets.SBDataset(
-            root=data_dir, image_set="val", mode="segmentation", download=False
-        )
-
-    dist.barrier()  # Ensure that only one process downloads the dataset
-
-    # train_dataset = datasets.VOCSegmentation(
-    #     root=data_dir,
-    #     year="2012",
-    #     image_set="train",
-    #     download=False,
-    #     transforms=train_transforms,
-    # )
-    # train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
-    # val_dataset = datasets.VOCSegmentation(
-    #     root=data_dir,
-    #     year="2012",
-    #     image_set="val",
-    #     download=False,
-    #     transforms=val_transforms,
-    # )
-    # val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
-
-    train_dataset = datasets.SBDataset(
-        root=data_dir,
-        image_set="train",
-        mode="segmentation",
-        download=False,
-        transforms=train_transforms,
-    )
-    train_dataset = datasets.wrap_dataset_for_transforms_v2(train_dataset)
-    val_dataset = datasets.SBDataset(
-        root=data_dir,
-        image_set="val",
-        mode="segmentation",
-        download=False,
-        transforms=val_transforms,
-    )
-    val_dataset = datasets.wrap_dataset_for_transforms_v2(val_dataset)
+    train_dataset = get_dataset(config, split="train", transforms=train_transforms)
+    val_dataset = get_dataset(config, split="valid", transforms=val_transforms)
 
     train_sampler = DistributedSampler(train_dataset, shuffle=True)
     val_sampler = DistributedSampler(val_dataset, shuffle=False)

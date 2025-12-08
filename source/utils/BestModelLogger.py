@@ -6,7 +6,8 @@ import torch
 import torch.nn.functional as F
 import wandb
 from torch.distributed.checkpoint.state_dict import StateDictOptions, get_state_dict
-from torchvision import datasets
+
+from source.setup import get_dataset
 
 
 class BestModelLogger:
@@ -27,18 +28,9 @@ class BestModelLogger:
         self.num_images = num_images
         self.task = config["general"]["task"]
 
-        # Retrieve data directory
-        data_dir = config["general"].get("data_dir", "./data")
-
         if self.task == "segmentation":
             # Initialize the dataset without transforms
-            self.raw_dataset = datasets.SBDataset(
-                root=data_dir,
-                image_set="val",
-                mode="segmentation",
-                download=False,
-                transforms=None,
-            )
+            self.raw_dataset = get_dataset(config, split="val", transforms=None)
 
             self.fixed_raw_data = []
             self.fixed_model_inputs = []
@@ -111,6 +103,7 @@ class BestModelLogger:
                         pred_mask = sample_logits.argmax(dim=1).squeeze().cpu().numpy()
 
                         # PASCAL VOC class labels from https://www.robots.ox.ac.uk/~vgg/projects/pascal/VOC/voc2012/segexamples/index.html
+                        # TODO: Do they match SBDataset labels?
                         VOC_CLASS_LABELS = {
                             0: "background",
                             1: "aeroplane",
