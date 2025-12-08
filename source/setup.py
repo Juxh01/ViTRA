@@ -14,6 +14,8 @@ from detonation import (
     NoReplicator,
     Optimizers,
     RandomReplicator,
+    SlicingReplicator,
+    StridingReplicator,
     prepare_detonation,
 )
 from torch import distributed as dist
@@ -29,7 +31,6 @@ from torchvision.transforms import v2 as T
 from transformers import (
     DPTConfig,
     DPTForSemanticSegmentation,
-    ViTConfig,
     ViTForImageClassification,
     ViTModel,
 )
@@ -132,6 +133,88 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
     return dataset
 
 
+def get_ViT(config: Dict[str, Any]):
+    task = config["general"]["task"]
+    backbone_name = config["general"].get("backbone_name", None)
+    if task == "classification":
+        if backbone_name:
+            print(f"Initializing ViT with pretrained backbone: {backbone_name}")
+            model = ViTForImageClassification.from_pretrained(
+                backbone_name,
+                num_labels=config["general"]["num_classes"],
+                image_size=224,
+                ignore_mismatched_sizes=True,
+            )
+        else:
+            raise ValueError("Backbone name must be provided for classification task.")
+    elif task == "segmentation":
+        if backbone_name:
+            pretrained_vit = ViTModel.from_pretrained(
+                backbone_name, add_pooling_layer=False
+            )
+        else:
+            raise ValueError("Backbone name must be provided for segmentation task.")
+
+        dpt_base_config = DPTConfig(
+            # --- ViT-Base Configuration (mostly default) ---
+            hidden_size=768,
+            num_hidden_layers=12,
+            num_attention_heads=12,
+            intermediate_size=3072,
+            hidden_act="gelu",
+            hidden_dropout_prob=0.0,
+            attention_probs_dropout_prob=0.0,
+            initializer_range=0.02,
+            layer_norm_eps=1e-12,
+            image_size=384,
+            patch_size=16,
+            num_channels=3,
+            qkv_bias=True,
+            # --- DPT Configuration ---
+            is_hybrid=False,  # ViT-Base Backbone
+            backbone_out_indices=[2, 5, 8, 11],  # Like in DPT-Paper
+            readout_type="project",  # Default in DPT-Paper
+            num_labels=config["general"]["num_classes"],  # VOC has 21 classes
+            # --- Decoder Configuration (default configuration) ---
+            reassemble_factors=[4, 2, 1, 0.5],
+            neck_hidden_sizes=[96, 192, 384, 768],
+            fusion_hidden_size=256,
+            head_in_index=-1,
+            use_batch_norm_in_fusion_residual=False,
+            use_bias_in_fusion_residual=True,
+            add_projection=False,
+            # --- Auxiliary Head (default configuration) ---
+            use_auxiliary_head=True,
+            auxiliary_loss_weight=0.4,
+            semantic_loss_ignore_index=255,
+            semantic_classifier_dropout=0.1,
+            # --- Backbone-Configuration (no pretrained version) ---
+            backbone_config=None,
+            use_pretrained_backbone=False,
+            use_timm_backbone=False,
+            # --- Pooler-Configuration ---
+            pooler_output_size=None,  # Defaults to hidden_size
+            pooler_act="tanh",
+        )
+
+        model = DPTForSemanticSegmentation(dpt_base_config)
+        print(f"Initializing DPT with pretrained backbone: {backbone_name}")
+
+        # Manually load weights as AutoBackbone does not support DPT yet
+        model.dpt.embeddings.load_state_dict(
+            pretrained_vit.embeddings.state_dict(), strict=False
+        )
+        model.dpt.encoder.load_state_dict(
+            pretrained_vit.encoder.state_dict(), strict=False
+        )
+        model.dpt.layernorm.load_state_dict(
+            pretrained_vit.layernorm.state_dict(), strict=False
+        )
+    else:
+        raise ValueError(f"Unsupported task: {task}")
+    return model
+
+
 def setup_distributed_training(
     model,
     transformer_layer_cls,
@@ -168,6 +251,16 @@ def setup_distributed_training(
         )
     elif optim_config["repl"] == "deto-full":
         replicator = FullReplicator()
+    elif optim_config["repl"] == "deto-stride":
+        replicator = StridingReplicator(
+            compression_rate=optim_config["compression_rate"],
+            compression_chunk=optim_config["compression_chunk"],
+        )
+    elif optim_config["repl"] == "deto-slice":
+        replicator = SlicingReplicator(
+            compression_rate=optim_config["compression_rate"],
+            compression_chunk=optim_config["compression_chunk"],
+        )
     else:
         replicator = NoReplicator()
         raise NotImplementedError("NoReplicator is not wanted yet.")
@@ -198,34 +291,26 @@ def setup_classification(device: str, config: Dict[str, Any]):
     seed = config["general"]["seed"]
     set_seed(seed)
 
-    vit_base_config = ViTConfig(
-        hidden_size=768,
-        num_hidden_layers=12,
-        num_attention_heads=12,
-        intermediate_size=3072,
-        hidden_act="gelu",
-        hidden_dropout_prob=0.0,
-        attention_probs_dropout_prob=0.0,
-        initializer_range=0.02,
-        layer_norm_eps=1e-12,
-        image_size=224,
-        patch_size=16,
-        num_channels=3,
-        qkv_bias=True,
-        encoder_stride=16,
-        pooler_output_size=None,  # Defaults to hidden_size
-        pooler_act="tanh",
-        num_labels=211,
-    )
-    backbone_name = config["general"].get("backbone_name", None)
-    if backbone_name:
-        print(f"Initializing ViT with pretrained backbone: {backbone_name}")
-        model = ViTForImageClassification.from_pretrained(
-            backbone_name, num_labels=211, image_size=224, ignore_mismatched_sizes=True
-        )
-    else:
-        print("Initializing ViT from scratch (Random Weights)")
-        model = ViTForImageClassification(vit_base_config)
+    # vit_base_config = ViTConfig(
+    #     hidden_size=768,
+    #     num_hidden_layers=12,
+    #     num_attention_heads=12,
+    #     intermediate_size=3072,
+    #     hidden_act="gelu",
+    #     hidden_dropout_prob=0.0,
+    #     attention_probs_dropout_prob=0.0,
+    #     initializer_range=0.02,
+    #     layer_norm_eps=1e-12,
+    #     image_size=224,
+    #     patch_size=16,
+    #     num_channels=3,
+    #     qkv_bias=True,
+    #     encoder_stride=16,
+    #     pooler_output_size=None,  # Defaults to hidden_size
+    #     pooler_act="tanh",
+    #     num_labels=211,
+    # )
+    model = get_ViT(config)
     model.to(device)
 
     train_transforms = T.Compose(
@@ -258,12 +343,6 @@ def setup_classification(device: str, config: Dict[str, Any]):
         ]
     )
 
-    # train_dataset = datasets.Country211(
-    #     root=data_dir,
-    #     split="train",
-    #     download=False,
-    #     transform=train_transforms,
-    # )
     train_dataset = get_dataset(config, split="train", transforms=train_transforms)
 
     val_dataset = get_dataset(config, split="valid", transforms=val_transforms)
@@ -307,72 +386,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     seed = config["general"]["seed"]
     set_seed(seed)
 
-    backbone_name = config["general"].get("backbone_name", None)
-
-    if backbone_name:
-        pretrained_vit = ViTModel.from_pretrained(
-            backbone_name, add_pooling_layer=False
-        )
-
-    dpt_base_config = DPTConfig(
-        # --- ViT-Base Configuration (mostly default) ---
-        hidden_size=768,
-        num_hidden_layers=12,
-        num_attention_heads=12,
-        intermediate_size=3072,
-        hidden_act="gelu",
-        hidden_dropout_prob=0.0,
-        attention_probs_dropout_prob=0.0,
-        initializer_range=0.02,
-        layer_norm_eps=1e-12,
-        image_size=384,
-        patch_size=16,
-        num_channels=3,
-        qkv_bias=True,
-        # --- DPT Configuration ---
-        is_hybrid=False,  # ViT-Base Backbone
-        backbone_out_indices=[2, 5, 8, 11],  # Like in DPT-Paper
-        readout_type="project",  # Default in DPT-Paper
-        num_labels=21,  # VOC has 21 classes
-        # --- Decoder Configuration (default configuration) ---
-        reassemble_factors=[4, 2, 1, 0.5],
-        neck_hidden_sizes=[96, 192, 384, 768],
-        fusion_hidden_size=256,
-        head_in_index=-1,
-        use_batch_norm_in_fusion_residual=False,
-        use_bias_in_fusion_residual=True,
-        add_projection=False,
-        # --- Auxiliary Head (default configuration) ---
-        use_auxiliary_head=True,
-        auxiliary_loss_weight=0.4,
-        semantic_loss_ignore_index=255,
-        semantic_classifier_dropout=0.1,
-        # --- Backbone-Configuration (no pretrained version) ---
-        backbone_config=None,
-        use_pretrained_backbone=False,
-        use_timm_backbone=False,
-        # --- Pooler-Configuration ---
-        pooler_output_size=None,  # Defaults to hidden_size
-        pooler_act="tanh",
-    )
-
-    model = DPTForSemanticSegmentation(dpt_base_config)
-    if backbone_name:
-        print(f"Initializing DPT with pretrained backbone: {backbone_name}")
-
-        # Manually load weights as AutoBackbone does not support DPT yet
-        model.dpt.embeddings.load_state_dict(
-            pretrained_vit.embeddings.state_dict(), strict=False
-        )
-        model.dpt.encoder.load_state_dict(
-            pretrained_vit.encoder.state_dict(), strict=False
-        )
-        model.dpt.layernorm.load_state_dict(
-            pretrained_vit.layernorm.state_dict(), strict=False
-        )
-        backbone_params = []
-        new_params = []
-
+    model = get_ViT(config)
     model.to(device)
 
     train_transforms = T.Compose(
@@ -455,6 +469,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     optim_config = config["optimizer"]
 
     # Set different learning rates for backbone and new layers
+    backbone_name = config["general"].get("backbone_name", None)
     if backbone_name:
         base_lr = optim_config["lr"]
         new_layer_mult = optim_config.get("new_layer_mult", 10.0)

@@ -12,9 +12,8 @@ from torch.utils.data.distributed import DistributedSampler
 from torchvision import tv_tensors
 from torchvision.transforms import v2 as T
 from tqdm import tqdm
-from transformers import ViTConfig, ViTForImageClassification
 
-from source.setup import get_dataset
+from source.setup import get_dataset, get_ViT
 from source.train import get_metrics
 from source.utils.AdvAttack import apgd_largereps
 
@@ -154,38 +153,7 @@ def evaluate_classification(device, config, run):
 
     # --- RECREATE MODEL FROM CONFIG  ---
     # AutoAttack seems not to work in a ddp setting
-    # TODO: Refactor both: model setup and datasets
-    vit_base_config = ViTConfig(
-        hidden_size=768,
-        num_hidden_layers=12,
-        num_attention_heads=12,
-        intermediate_size=3072,
-        hidden_act="gelu",
-        hidden_dropout_prob=0.0,
-        attention_probs_dropout_prob=0.0,
-        initializer_range=0.02,
-        layer_norm_eps=1e-12,
-        image_size=224,
-        patch_size=16,
-        num_channels=3,
-        qkv_bias=True,
-        encoder_stride=16,
-        pooler_output_size=None,
-        pooler_act="tanh",
-        num_labels=211,
-    )
-
-    backbone_name = config["general"].get("backbone_name", None)
-    if backbone_name:
-        if rank == 0:
-            print(f"Initializing ViT with pretrained backbone: {backbone_name}")
-        model = ViTForImageClassification.from_pretrained(
-            backbone_name, num_labels=211, image_size=224, ignore_mismatched_sizes=True
-        )
-    else:
-        if rank == 0:
-            print("Initializing ViT from scratch (Random Weights)")
-        model = ViTForImageClassification(vit_base_config)
+    model = get_ViT(config)
 
     # --- LOAD WEIGHTS LOCALLY ---
     if rank == 0:

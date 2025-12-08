@@ -9,6 +9,32 @@ from torch.distributed.checkpoint.state_dict import StateDictOptions, get_state_
 
 from source.setup import get_dataset
 
+# PASCAL VOC class labels from https://www.robots.ox.ac.uk/~vgg/projects/pascal/VOC/voc2012/segexamples/index.html
+# TODO: Do they match SBDataset labels?
+VOC_CLASS_LABELS = {
+    0: "background",
+    1: "aeroplane",
+    2: "bicycle",
+    3: "bird",
+    4: "boat",
+    5: "bottle",
+    6: "bus",
+    7: "car",
+    8: "cat",
+    9: "chair",
+    10: "cow",
+    11: "diningtable",
+    12: "dog",
+    13: "horse",
+    14: "motorbike",
+    15: "person",
+    16: "potted plant",
+    17: "sheep",
+    18: "sofa",
+    19: "train",
+    20: "tv/monitor",
+}
+
 
 class BestModelLogger:
     def __init__(self, config, val_dataset, device, num_images=10):
@@ -101,32 +127,6 @@ class BestModelLogger:
 
                         # Get prediction mask
                         pred_mask = sample_logits.argmax(dim=1).squeeze().cpu().numpy()
-
-                        # PASCAL VOC class labels from https://www.robots.ox.ac.uk/~vgg/projects/pascal/VOC/voc2012/segexamples/index.html
-                        # TODO: Do they match SBDataset labels?
-                        VOC_CLASS_LABELS = {
-                            0: "background",
-                            1: "aeroplane",
-                            2: "bicycle",
-                            3: "bird",
-                            4: "boat",
-                            5: "bottle",
-                            6: "bus",
-                            7: "car",
-                            8: "cat",
-                            9: "chair",
-                            10: "cow",
-                            11: "diningtable",
-                            12: "dog",
-                            13: "horse",
-                            14: "motorbike",
-                            15: "person",
-                            16: "potted plant",
-                            17: "sheep",
-                            18: "sofa",
-                            19: "train",
-                            20: "tv/monitor",
-                        }
 
                         # Create overlayed WandB image
                         wandb_images.append(
