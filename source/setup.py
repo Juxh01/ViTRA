@@ -62,6 +62,7 @@ def setup_process_group(device: str):
 
 
 def steup_lr_scheduler(optim, config: Dict[str, Any]):
+    # TODO: Move to step based scheduler?
     optim_config = config["optimizer"]
     # task = config["general"]["task"]
     # if task == "classification":

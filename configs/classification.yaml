@@ -14,11 +14,12 @@ general:
 optimizer:
   # Optimizer settings
   lr: 5e-5
-  lr_gamma: 0.9
+  lr_power: 0.9
   momentum: 0.9
   optimizer_str: "sgd"
   batch_size_per_device: 512
-  epochs: 50
+  warmup_epochs: 5
+  epochs: 30
 
   # Replicator settings
   replicate_every: 1
