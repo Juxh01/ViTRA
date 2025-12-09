@@ -42,7 +42,7 @@ distributed:
 
 adversarial:
   enabled: true
-  epsilon: 0.00392 # 1/255
+  epsilon: 0.001
   steps: 50       
   loss: "mask-ce-bal" # oder "js-avg"
   n_restarts: 1

@@ -1,5 +1,5 @@
-name: Country211-ViT-B-Pretrained
-description: Classification on Country211 using pretrained ViT-B model
+name: "${general.dataset_name}-${general.backbone_name}"
+description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
 general:
   seed: 10
   backbone_name: "google/vit-base-patch16-224" # or None for random initialization
@@ -42,7 +42,7 @@ distributed:
 
 adversarial:
   enabled: true
-  epsilon: 0.00392 # 1/255
+  epsilon: 0.001
   norm: "Linf"    
   batch_size_per_device: 256
   
