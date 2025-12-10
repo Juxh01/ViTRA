@@ -131,9 +131,6 @@ def train(
     # Classification: accuracy, segmentation: mIoU
     best_metric_1 = 0.0
 
-    # Classification: ECE, segmentation: bIoU
-    best_metric_2 = 0.0
-
     best_model_logger = BestModelLogger(
         config=config,
         val_dataset=val_loader.dataset,
@@ -242,17 +239,13 @@ def train(
         if task == "classification":
             learning_trajectory.append(val_metrics_dict["val/acc"].item())
             acc = val_metrics_dict["val/acc"].item()
-            ece = val_metrics_dict["val/ece"].item()
             if acc > best_metric_1:
                 best_metric_1 = acc
-                best_metric_2 = ece
         elif task == "segmentation":
             learning_trajectory.append(val_metrics_dict["val/mIoU"].item())
             miou = val_metrics_dict["val/mIoU"].item()
-            biou = val_metrics_dict["val/bIoU"].item()
             if miou > best_metric_1:
                 best_metric_1 = miou
-                best_metric_2 = biou
 
         ### Check for best model and log images if needed ###
         best_model_logger.check_and_log(
@@ -309,7 +302,6 @@ def train(
 
     return (
         best_metric_1,
-        best_metric_2,
         sum(epoch_times) / len(epoch_times),
         sum(learning_trajectory) / len(learning_trajectory),
     )

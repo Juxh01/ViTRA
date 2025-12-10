@@ -64,7 +64,7 @@ hydra:
       deterministic: false 
       n_workers: 1
       # SMAC treats these as costs to MINIMIZE.
-      objectives: ["segmentation_error","boundary_error", "aulc_error", "avg_epoch_time"]
+      objectives: ["segmentation_error", "aulc_error", "avg_epoch_time"]
     search_space:
       hyperparameters:
         optimizer.lr:

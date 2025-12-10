@@ -50,7 +50,7 @@ def run_worker(cfg: DictConfig) -> dict:
         )
 
     # Train with configuration
-    mIoU, biou, avg_epoch_time, avg_aulc = train(
+    mIoU, avg_epoch_time, avg_aulc = train(
         device=device,
         config=config_dict,
         model=model,
@@ -66,7 +66,6 @@ def run_worker(cfg: DictConfig) -> dict:
     # 6. Result Dictionary (SMAC minimizes all objectives)
     result_dict = {
         "segmentation_error": 1.0 - mIoU,
-        "boundary_error": 1.0 - biou,
         "aulc_error": 1.0 - avg_aulc,
         "avg_epoch_time": avg_epoch_time,
     }
@@ -112,7 +111,6 @@ def launch_worker(cfg: DictConfig) -> dict:
     # Crash Handling (Worst-Case Kosten)
     crash_result = {
         "segmentation_error": 1.0,
-        "boundary_error": 1.0,
         "neg_aulc_score": 1.0,
         "avg_epoch_time": 99999.0,
     }
