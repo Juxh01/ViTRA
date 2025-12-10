@@ -85,7 +85,7 @@ endif
 	@echo "Node 1:    $(NODE1)"
 	$(PYTHON) source/experiments/DeMo_GP_segmentation.py --config-name DeMo_GP_segmentation \
 		distributed.master_addr=$(MASTER) \
-		distributed.node1_addr=$(NODE1)
+		distributed.node1_addr=$(NODE1) -m
 # --- SSH Cluster Automation ---
 
 # Run this on Node 0 (Master)
