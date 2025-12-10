@@ -162,7 +162,9 @@ def launch_worker(cfg: DictConfig) -> dict:
         return crash_result
 
 
-@hydra.main(config_path="../../configs", config_name="segmentation", version_base="1.1")
+@hydra.main(
+    config_path="../../configs", config_name="DeMo_GP_segmentation", version_base="1.1"
+)
 def main(cfg: DictConfig) -> float:
     # Decide mode based on presence of RANK environment variable
     if "RANK" in os.environ:

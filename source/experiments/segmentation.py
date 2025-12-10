@@ -32,7 +32,7 @@ def main(cfg: DictConfig) -> None:
             name=cfg.general.experiment_name,
         )
 
-    _, _, _, _ = train(
+    _, _, _ = train(
         device=device,
         config=config_dict,
         model=model,
