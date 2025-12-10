@@ -29,7 +29,7 @@ define build_torchrun_cmd
 endef
 
 .PHONY: help install check format pre-commit clean clean-build build publish test
-.PHONY: classification segmentation setup-master setup-worker
+.PHONY: classification segmentation setup-master setup-worker sweep-segmentation
 
 help:
 	@echo "Makefile ${NAME}"
@@ -73,6 +73,19 @@ segmentation:
 	$(eval TORCH_FLAGS := $(shell $(call build_torchrun_cmd,$(CONF_SEG))))
 	$(TORCHRUN) $(TORCH_FLAGS) source/experiments/segmentation.py 
 
+sweep-segmentation:
+ifndef MASTER
+	$(error MASTER is undefined. Run: make sweep MASTER=192.168.1.X NODE1=user@192.168.1.Y)
+endif
+ifndef NODE1
+	$(error NODE1 is undefined. Run: make sweep MASTER=192.168.1.X NODE1=user@192.168.1.Y)
+endif
+	@echo "Starting SMAC Sweep Driver on Master Node..."
+	@echo "Master IP: $(MASTER)"
+	@echo "Node 1:    $(NODE1)"
+	$(PYTHON) source/experiments/DeMo_GP_segmentation.py --config-name DeMo_GP_segmentation \
+		distributed.master_addr=$(MASTER) \
+		distributed.node1_addr=$(NODE1)
 # --- SSH Cluster Automation ---
 
 # Run this on Node 0 (Master)

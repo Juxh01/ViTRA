@@ -82,44 +82,71 @@ def run_worker(cfg: DictConfig) -> dict:
 
 def launch_worker(cfg: DictConfig) -> dict:
     """
-    DRIVER-MODE: Called by hydra main when no RANK is set.
-    Starts torchrun as a subprocess and returns the result to SMAC.
+    DRIVER-MODE: Starts torchrun locally AND on the remote node via SSH.
     """
-
     dist_cfg = cfg.distributed
 
-    # Path to current script
-    script_path = sys.argv[0]
+    # Prepare Command Base
+    # We must explicitly set the rendezvous endpoint for multi-node
+    rdzv_endpoint = f"{dist_cfg.master_addr}:{dist_cfg.master_port}"
 
-    # Build torchrun command
-    cmd = [
+    base_cmd = [
         "torchrun",
         f"--nproc_per_node={dist_cfg.nproc_per_node}",
         f"--nnodes={dist_cfg.nnodes}",
         "--rdzv-backend=c10d",
-        script_path,
+        f"--rdzv-endpoint={rdzv_endpoint}",
+        sys.argv[0],  # The script path
     ]
 
-    # Get hydra overrides from current run
+    # Append all Hydra overrides (the SMAC params)
     hydra_overrides = HydraConfig.get().overrides.task
-    cmd.extend(hydra_overrides)
+    base_cmd.extend(hydra_overrides)
 
-    # Start process
-    # capture_output=False lets us see the training output live
-    result = subprocess.run(cmd, capture_output=False)
+    # Construct Local Command (Rank 0)
+    cmd_rank0 = base_cmd.copy()
+    cmd_rank0.insert(1, "--node_rank=0")  # Insert rank before script path
 
-    # Crash Handling (Worst-Case Kosten)
+    # Construct Remote Command (Rank 1) via SSH
+    node1_address = cfg.distributed.node1_addr
+    # Ensure the python env is correct on remote.
+    # You might need to prepend 'source .venv/bin/activate && '
+    remote_python_cmd = " ".join(base_cmd)
+
+    # Insert rank 1 for remote
+    remote_python_cmd = remote_python_cmd.replace("torchrun", "torchrun --node_rank=1")
+
+    cmd_rank1 = [
+        "ssh",
+        node1_address,
+        f"cd {os.getcwd()} && source .venv/bin/activate && {remote_python_cmd}",
+    ]
+
+    print(f"[Driver] Launching Local Rank 0: {' '.join(cmd_rank0)}")
+    print(f"[Driver] Launching Remote Rank 1: {' '.join(cmd_rank1)}")
+
+    # Execute Both Processes
+    proc_remote = subprocess.Popen(cmd_rank1)
+    proc_local = subprocess.Popen(cmd_rank0)
+
+    # Wait for completion
+    proc_local.wait()
+    proc_remote.wait()
+
+    # Crash Handling & Result Retrieval
     crash_result = {
         "segmentation_error": 1.0,
-        "neg_aulc_score": 1.0,
+        "aulc_error": 1.0,
         "avg_epoch_time": 99999.0,
     }
 
-    if result.returncode != 0:
-        print("[Driver] Trial failed via torchrun return code.")
+    if proc_local.returncode != 0:
+        print("[Driver] Local trial failed.")
         return crash_result
 
-    # Read result file
+    # Note: If Node 1 fails but Node 0 succeeds, PyTorch DDP usually crashes Node 0 too.
+    # If Node 0 finishes writing the json, we assume success.
+
     try:
         if os.path.exists("trial_result.json"):
             with open("trial_result.json", "r") as f:
