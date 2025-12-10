@@ -21,7 +21,7 @@ dependencies = [
     "torchvision",
     "matplotlib",
     "hydra-core",
-    "hydra-smac-sweeper @ https://github.com/automl/hydra-smac-sweeper.git",
+    "hydra-smac-sweeper @ git+https://github.com/automl/hydra-smac-sweeper.git",
     "omegaconf",
     "rliable",
     "setuptools<81",
