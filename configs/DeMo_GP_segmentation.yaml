@@ -80,6 +80,7 @@ hydra:
           upper: 1.0
           log: false
           default_value: ${optimizer.compression_rate}
+        # TODO: Categorical seems not to work
         optimizer.compression_chunk:
           type: categorical
           choices: [16, 32, 64, 128, 256, 512]
