@@ -51,7 +51,7 @@ install:
 		git clone https://github.com/automl/hydra-smac-sweeper.git .dependencies/hydra-smac-sweeper; \
 	fi
 	@echo ">>> Re-installing SMAC Sweeper with 'editable_mode=compat'..."
-	$(PIP) install -e .dependencies/hydra-smac-sweeper --config-settings editable_mode=compat
+	$(PIP) install .dependencies/hydra-smac-sweeper --config-settings editable_mode=compat
 	$(PRECOMMIT) install
 
 check:
