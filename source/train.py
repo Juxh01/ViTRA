@@ -1,6 +1,7 @@
 # Adopted from https://github.com/schneiderkamplab/DeToNATION/blob/main/benchmarks/ViT/train.py
 
 import os
+import time
 
 import torch
 import wandb
@@ -99,7 +100,7 @@ def train(
     optimizer,
     scheduler,
     run,
-) -> None:
+):
     """
     Train the model model using the provided data loaders, optimizer, and scheduler.
     This method assumes that distributed training
@@ -122,6 +123,17 @@ def train(
     train_loss_metric = MeanMetric().to(device)
     val_loss_metric = MeanMetric().to(device)
 
+    # Hyperparameter optimization metrics
+    avg_epoch_time = MeanMetric().to(device)
+    epoch_times = []
+    learning_trajectory = []
+
+    # Classification: accuracy, segmentation: mIoU
+    best_metric_1 = 0.0
+
+    # Classification: ECE, segmentation: bIoU
+    best_metric_2 = 0.0
+
     best_model_logger = BestModelLogger(
         config=config,
         val_dataset=val_loader.dataset,
@@ -139,6 +151,10 @@ def train(
 
         val_metrics.reset()
         val_loss_metric.reset()
+
+        avg_epoch_time.reset()
+
+        start_time = time.time()
 
         for inputs, targets in tqdm(
             train_loader,
@@ -175,6 +191,10 @@ def train(
                     )
 
             train_metrics.update(preds, targets)
+
+        # Compute epoch time
+        epoch_time = time.time() - start_time
+        avg_epoch_time.update(epoch_time)
 
         ### Validation loop ###
         with torch.no_grad():
@@ -215,6 +235,24 @@ def train(
         val_loss = val_loss_metric.compute().item()
         train_metrics_dict = train_metrics.compute()
         val_metrics_dict = val_metrics.compute()
+        epoch_time_agg = avg_epoch_time.compute().item()
+
+        # Store metrics more HPO
+        epoch_times.append(epoch_time_agg)
+        if task == "classification":
+            learning_trajectory.append(val_metrics_dict["val/acc"].item())
+            acc = val_metrics_dict["val/acc"].item()
+            ece = val_metrics_dict["val/ece"].item()
+            if acc > best_metric_1:
+                best_metric_1 = acc
+                best_metric_2 = ece
+        elif task == "segmentation":
+            learning_trajectory.append(val_metrics_dict["val/mIoU"].item())
+            miou = val_metrics_dict["val/mIoU"].item()
+            biou = val_metrics_dict["val/bIoU"].item()
+            if miou > best_metric_1:
+                best_metric_1 = miou
+                best_metric_2 = biou
 
         ### Check for best model and log images if needed ###
         best_model_logger.check_and_log(
@@ -239,6 +277,7 @@ def train(
                 "lr": scheduler.get_last_lr()[0],
                 "train/loss": train_loss,
                 "val/loss": val_loss,
+                "epoch_time": epoch_time_agg,
             }
             results_dict.update({k: v.item() for k, v in train_metrics_dict.items()})
             results_dict.update({k: v.item() for k, v in val_metrics_dict.items()})
@@ -267,3 +306,10 @@ def train(
         run.log_artifact(artifact)
 
         print("Model saved and uploaded.")
+
+    return (
+        best_metric_1,
+        best_metric_2,
+        sum(epoch_times) / len(epoch_times),
+        sum(learning_trajectory) / len(learning_trajectory),
+    )

@@ -1,0 +1,92 @@
+defaults:
+  - override hydra/sweeper: SMAC
+
+name: "${general.dataset_name}-${general.backbone_name}"
+description: "Semantic Segmentation on ${general.dataset_name} using ${general.backbone_name} model"
+seed: 10
+general:
+  seed: ${seed}
+  backbone_name: "google/vit-base-patch16-384" # or None for random initialization
+  wandb_project: "ViTRA"
+  experiment_name: ${name}
+  task: "segmentation"
+  data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
+  dataset_name: "SBDataset"
+  num_classes: 21
+
+optimizer:
+  # Optimizer settings
+  lr: 1e-5
+  lr_power: 0.9
+  lr_factor: 10
+  momentum: 0.9
+  optimizer_str: "sgd"
+  batch_size_per_device: 32
+  warmup_epochs: 5
+  epochs: 15
+
+  # Replicator settings
+  replicate_every: 1
+  skip_every: null
+  shards: 2
+  repl: "deto-demo"
+  # Demo
+  compression_topk: 32
+  compression_chunk: 64
+  # Random
+  compression_rate: 0.5
+
+distributed:
+  nproc_per_node: 4
+  nnodes: 1
+  node_rank: 0
+  master_addr: "localhost"
+  master_port: 29500
+  standalone: true # Setze auf false, wenn nnodes > 1
+
+adversarial:
+  enabled: false
+  epsilon: 0.001
+  steps: 50       
+  loss: "mask-ce-bal" # oder "js-avg"
+  n_restarts: 1
+  batch_size_per_device: 48
+
+hydra:
+  sweeper:
+    smac_class: smac.facade.blackbox_facade.BlackBoxFacade
+    smac_kwargs:
+      dask_client: null
+    scenario:
+      name: "vitra_segmentation_sweep"
+      seed: 10
+      n_trials: 75         
+      deterministic: false 
+      n_workers: 1
+      # SMAC treats these as costs to MINIMIZE.
+      objectives: ["segmentation_error","boundary_error", "aulc_error", "avg_epoch_time"]
+    search_space:
+      hyperparameters:
+        optimizer.lr:
+          type: uniform_float
+          lower: 1e-6
+          upper: 1e-4
+          log: true
+          default_value: ${optimizer.lr}
+        optimizer.compression_rate:
+          type: uniform_float
+          lower: 0.01
+          upper: 1.0
+          log: false
+          default_value: ${optimizer.compression_rate}
+        optimizer.compression_chunk:
+          type: categorical
+          choices: [16, 32, 64, 128, 256, 512]
+          default_value: ${optimizer.compression_chunk}
+        optimizer.momentum:
+          type: uniform_float
+          lower: 0.85
+          upper: 0.999
+          log: false
+          default_value: ${optimizer.momentum}
+

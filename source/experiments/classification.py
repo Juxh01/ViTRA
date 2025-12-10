@@ -34,7 +34,7 @@ def main(cfg: DictConfig) -> None:
             name=cfg.general.experiment_name,
         )
 
-    train(
+    _, _, _, _ = train(
         device=device,
         config=config_dict,
         model=model,
@@ -46,11 +46,12 @@ def main(cfg: DictConfig) -> None:
         run=run,
     )
     dist.barrier()
-    evaluate_classification(
-        device=device,
-        config=config_dict,
-        run=run,
-    )
+    if config_dict["adversarial"]["enabled"]:
+        evaluate_classification(
+            device=device,
+            config=config_dict,
+            run=run,
+        )
     dist.barrier()
     if rank == 0:
         run.finish()

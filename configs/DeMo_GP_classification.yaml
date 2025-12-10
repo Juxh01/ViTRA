@@ -1,0 +1,50 @@
+defaults:
+  - override hydra/sweeper: SMAC
+
+name: "${general.dataset_name}-${general.backbone_name}-GP"
+description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
+general:
+  seed: 10
+  backbone_name: "google/vit-base-patch16-224" # or None for random initialization
+  wandb_project: "ViTRA"
+  experiment_name: ${name}
+  task: "classification"
+  data_dir: "${hydra:runtime.cwd}/data"
+  dataset_name: "Country211"
+  num_classes: 211
+
+
+optimizer:
+  # Optimizer settings
+  lr: 5e-5
+  lr_power: 0.9
+  momentum: 0.9
+  optimizer_str: "sgd"
+  batch_size_per_device: 512
+  warmup_epochs: 5
+  epochs: 30
+
+  # Replicator settings
+  replicate_every: 1
+  skip_every: null
+  shards: 2
+  repl: "deto-demo"
+  # Demo
+  compression_topk: 32
+  compression_chunk: 64
+
+distributed:
+  nproc_per_node: 4
+  nnodes: 1
+  node_rank: 0
+  master_addr: "localhost"
+  master_port: 29500
+  standalone: true # Setze auf false, wenn nnodes > 1
+
+adversarial:
+  enabled: false
+  epsilon: 0.001
+  norm: "Linf"    
+  batch_size_per_device: 256
+  
+  
