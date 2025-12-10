@@ -45,6 +45,13 @@ help:
 install:
 	$(PIP) install swig
 	$(PIP) install -e ".[dev]"
+	@mkdir -p .dependencies
+	@if [ ! -d ".dependencies/hydra-smac-sweeper" ]; then \
+		echo ">>> Cloning hydra-smac-sweeper source..."; \
+		git clone https://github.com/automl/hydra-smac-sweeper.git .dependencies/hydra-smac-sweeper; \
+	fi
+	@echo ">>> Re-installing SMAC Sweeper with 'editable_mode=compat'..."
+	$(PIP) install -e .dependencies/hydra-smac-sweeper --config-settings editable_mode=compat
 	$(PRECOMMIT) install
 
 check:
@@ -83,8 +90,7 @@ endif
 	@echo "Starting SMAC Sweep Driver on Master Node..."
 	@echo "Master IP: $(MASTER)"
 	@echo "Node 1:    $(NODE1)"
-	$(PYTHON) source/experiments/DeMo_GP_segmentation.py --config-name DeMo_GP_segmentation \
-		distributed.master_addr=$(MASTER) \
+	$(PYTHON) source/experiments/DeMo_GP_segmentation.py distributed.master_addr=$(MASTER) \
 		distributed.node1_addr=$(NODE1) -m
 # --- SSH Cluster Automation ---
 

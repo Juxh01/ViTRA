@@ -1,5 +1,6 @@
 defaults:
   - override hydra/sweeper: SMAC
+  - override hydra/mode: MULTIRUN
 
 name: "${general.dataset_name}-${general.backbone_name}"
 description: "Semantic Segmentation on ${general.dataset_name} using ${general.backbone_name} model"
