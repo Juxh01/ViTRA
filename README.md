@@ -41,6 +41,25 @@ This will:
 - Install the project in development mode with all dependencies
 - Set up pre-commit hooks for code quality
 
+**2. Cluster Setup (Multi-Node Only)**
+For distributed training, the Master node (Node 0) must be able to communicate with Worker nodes (Node 1+) via SSH without a password.
+
+  * **On Node 0 (Master):**
+    Generate the cluster key.
+
+    ```bash
+    make setup-master
+    ```
+
+    *Copy the public key output (starts with `ssh-ed25519 ...`).*
+
+  * **On Node 1+ (Workers):**
+    Authorize the master key.
+
+    ```bash
+    make setup-worker KEY="<PASTE_KEY_HERE>"
+    ```
+
 ## Usage & Experiments
 
 This project utilizes a Makefile to streamline development tasks and experiment execution. The training commands automatically parse Hydra configuration files to configure torchrun for both standalone and distributed environments.

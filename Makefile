@@ -9,29 +9,16 @@ TESTS_DIR := tests
 CONF_CLS ?= configs/classification.yaml
 CONF_SEG ?= configs/segmentation.yaml
 
-.PHONY: help install check format pre-commit clean clean-build build publish test
-.PHONY: classification segmentation
-
-help:
-	@echo "Makefile ${NAME}"
-	@echo "* install      	  to install all equirements and install pre-commit"
-	@echo "* clean            to clean any doc or build files"
-	@echo "* check            to check the source code for issues"
-	@echo "* format           to format the code with black and isort"
-	@echo "* pre-commit       to run the pre-commit check"
-	@echo "* build            to build a dist"
-	@echo "* publish          to help publish the current branch to pypi"
-	@echo "* test             to run the tests"
-
+# Defaults (Assumes you have activated your environment)
 PYTHON ?= python
+TORCHRUN ?= torchrun
 PYTEST ?= uv run pytest
 PIP ?= uv pip
 MAKE ?= make
 PRECOMMIT ?= uv run pre-commit
 RUFF ?= uv run ruff
-# Default torchrun command
-TORCHRUN ?= torchrun
 
+# Command builder
 define build_torchrun_cmd
 	$(PYTHON) -c "from omegaconf import OmegaConf; \
 	conf = OmegaConf.load('$(1)'); \
@@ -41,10 +28,24 @@ define build_torchrun_cmd
 	print(cmd)"
 endef
 
+.PHONY: help install check format pre-commit clean clean-build build publish test
+.PHONY: classification segmentation setup-master setup-worker
+
+help:
+	@echo "Makefile ${NAME}"
+	@echo "* install          to install all requirements and install pre-commit"
+	@echo "* clean            to clean any doc or build files"
+	@echo "* check            to check the source code for issues"
+	@echo "* format           to format the code with black and isort"
+	@echo "* classification   to run classification training"
+	@echo "* segmentation     to run segmentation training"
+	@echo "* setup-master     to generate SSH keys for the cluster (Run on Node 0)"
+	@echo "* setup-worker     to authorize the master key (Run on Node 1)"
+
 install:
 	$(PIP) install swig
 	$(PIP) install -e ".[dev]"
-	pre-commit install
+	$(PRECOMMIT) install
 
 check:
 	$(RUFF) format --check source tests
@@ -58,6 +59,7 @@ format:
 	$(RUFF) format --silent source tests
 	$(RUFF) check --fix --silent source tests --exit-zero
 	$(RUFF) check --fix source tests --exit-zero
+
 test:
 	$(PYTEST) ${TESTS_DIR}
 
@@ -70,6 +72,39 @@ segmentation:
 	@echo "Starte Segmentation Training mit Config: $(CONF_SEG)"
 	$(eval TORCH_FLAGS := $(shell $(call build_torchrun_cmd,$(CONF_SEG))))
 	$(TORCHRUN) $(TORCH_FLAGS) source/experiments/segmentation.py 
-	
 
+# --- SSH Cluster Automation ---
 
+# Run this on Node 0 (Master)
+setup-master:
+	@echo ">>> Generating SSH Key..."
+	@mkdir -p $(HOME)/.ssh
+	@chmod 700 $(HOME)/.ssh
+	# Generate key if it doesn't exist, preventing overwrite prompts
+	@if [ ! -f $(HOME)/.ssh/id_cluster ]; then \
+		ssh-keygen -t ed25519 -f $(HOME)/.ssh/id_cluster -N ""; \
+	fi
+	@echo ">>> Configuring SSH..."
+	@touch $(HOME)/.ssh/config
+	@chmod 600 $(HOME)/.ssh/config
+	@if ! grep -q "IdentityFile $(HOME)/.ssh/id_cluster" $(HOME)/.ssh/config; then \
+		echo "IdentityFile $(HOME)/.ssh/id_cluster" >> $(HOME)/.ssh/config; \
+	fi
+	@echo ""
+	@echo ">>> SUCCESS. COPY THE KEY BELOW TO RUN ON WORKER:"
+	@echo ""
+	@cat $(HOME)/.ssh/id_cluster.pub
+	@echo ""
+
+# Run this on Node 1 (Worker)
+# Usage: make setup-worker KEY="ssh-ed25519 AAAA..."
+setup-worker:
+ifndef KEY
+	$(error KEY is undefined. Run: make setup-worker KEY="paste_key_here")
+endif
+	@echo ">>> Authorizing Master Key..."
+	@mkdir -p $(HOME)/.ssh
+	@chmod 700 $(HOME)/.ssh
+	@echo "$(KEY)" >> $(HOME)/.ssh/authorized_keys
+	@chmod 600 $(HOME)/.ssh/authorized_keys
+	@echo ">>> Worker Configured."
