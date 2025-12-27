@@ -41,6 +41,8 @@ from transformers.models.dpt.modeling_dpt import (
 )
 from transformers.models.vit.modeling_vit import ViTLayer
 
+# TODO: Actiavate checkpointing based on config
+
 
 def set_seed(seed: int):
     random.seed(seed)

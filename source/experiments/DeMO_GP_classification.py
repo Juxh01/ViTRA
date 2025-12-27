@@ -11,7 +11,7 @@ from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 from torch import distributed as dist
 
-from source.setup import setup_segmentation
+from source.setup import setup_classification
 from source.train import train
 
 
@@ -23,7 +23,6 @@ def run_worker(cfg: DictConfig) -> dict:
     warnings.filterwarnings("ignore", message=".*Using a non-tuple sequence*")
 
     # Calculates topk based on rate * chunk, guaranteed >= 1
-
     cfg.optimizer.compression_topk = max(
         1, int(cfg.optimizer.compression_chunk * cfg.optimizer.compression_rate)
     )
@@ -35,7 +34,7 @@ def run_worker(cfg: DictConfig) -> dict:
 
     # Setup
     model, train_loader, val_loader, train_sampler, optimizer, scheduler = (
-        setup_segmentation(device=device, config=config_dict)
+        setup_classification(device=device, config=config_dict)
     )
 
     rank = int(os.environ["RANK"])
@@ -48,11 +47,11 @@ def run_worker(cfg: DictConfig) -> dict:
             config=config_dict,
             name=cfg.general.experiment_name,
             reinit=True,  # For sweeps
-            group="DeMo_GP_segmentation",
+            group="DeMo_GP_classification",
         )
 
     # Train with configuration
-    mIoU, avg_epoch_time, avg_aulc = train(
+    acc1, avg_epoch_time, avg_aulc = train(
         device=device,
         config=config_dict,
         model=model,
@@ -67,7 +66,7 @@ def run_worker(cfg: DictConfig) -> dict:
 
     # 6. Result Dictionary (SMAC minimizes all objectives)
     result_dict = {
-        "segmentation_error": 1.0 - mIoU,
+        "classification_error": 1.0 - acc1,
         "aulc_error": 1.0 - avg_aulc,
         "avg_epoch_time": avg_epoch_time,
     }
@@ -84,7 +83,7 @@ def run_worker(cfg: DictConfig) -> dict:
 
 def launch_worker(cfg: DictConfig) -> dict:
     """
-    DRIVER-MODE: Starts torchrun locally AND on the remote node via SSH.
+    DRIVER-MODE: Starts torchrun locally AND on the remote node via SSH (if nnodes > 1).
     """
     dist_cfg = cfg.distributed
 
@@ -109,10 +108,13 @@ def launch_worker(cfg: DictConfig) -> dict:
     cmd_rank0 = base_cmd.copy()
     cmd_rank0.insert(1, "--node_rank=0")  # Insert rank before script path
 
+    print(f"[Driver] Launching Local Rank 0: {' '.join(cmd_rank0)}")
+    proc_local = subprocess.Popen(cmd_rank0)
+    proc_remote = None
+
     # Construct Remote Command (Rank 1) via SSH
     node1_address = cfg.distributed.node1_addr
     # Ensure the python env is correct on remote.
-    # You might need to prepend 'source .venv/bin/activate && '
     remote_python_cmd = " ".join(base_cmd)
 
     # Insert rank 1 for remote
@@ -124,20 +126,17 @@ def launch_worker(cfg: DictConfig) -> dict:
         f"cd {os.getcwd()} && source .venv/bin/activate && {remote_python_cmd}",
     ]
 
-    print(f"[Driver] Launching Local Rank 0: {' '.join(cmd_rank0)}")
     print(f"[Driver] Launching Remote Rank 1: {' '.join(cmd_rank1)}")
-
-    # Execute Both Processes
     proc_remote = subprocess.Popen(cmd_rank1)
-    proc_local = subprocess.Popen(cmd_rank0)
 
     # Wait for completion
     proc_local.wait()
-    proc_remote.wait()
+    if proc_remote:
+        proc_remote.wait()
 
     # Crash Handling & Result Retrieval
     crash_result = {
-        "segmentation_error": 1.0,
+        "classification_error": 1.0,  # CHANGED: Key to match task
         "aulc_error": 1.0,
         "avg_epoch_time": 99999.0,
     }
@@ -164,8 +163,11 @@ def launch_worker(cfg: DictConfig) -> dict:
         return crash_result
 
 
+# CHANGED: Config name points to classification yaml
 @hydra.main(
-    config_path="../../configs", config_name="DeMo_GP_segmentation", version_base="1.1"
+    config_path="../../configs",
+    config_name="DeMo_GP_classification",
+    version_base="1.1",
 )
 def main(cfg: DictConfig) -> float:
     # Decide mode based on presence of RANK environment variable

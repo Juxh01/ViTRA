@@ -1,7 +1,7 @@
 defaults:
   - override hydra/sweeper: SMAC
 
-name: "${general.dataset_name}-${general.backbone_name}"
+name: "${general.dataset_name}-${general.backbone_name}-GP-DeMo"
 description: "Semantic Segmentation on ${general.dataset_name} using ${general.backbone_name} model"
 seed: 10
 general:
@@ -35,9 +35,10 @@ optimizer:
   compression_chunk: 64
   # Random
   compression_rate: 0.5
+  compression_chunk_factor: 6
 
 distributed:
-  nproc_per_node: 2
+  nproc_per_node: 4
   nnodes: 2
   node_rank: 0
   master_addr: "localhost"
@@ -81,10 +82,14 @@ hydra:
           log: false
           default_value: ${optimizer.compression_rate}
         # TODO: Categorical seems not to work
-        optimizer.compression_chunk:
-          type: categorical
-          choices: [16, 32, 64, 128, 256, 512]
-          default_value: ${optimizer.compression_chunk}
+        optimizer.compression_chunk_factor:
+          type: uniform_int
+          lower: 4
+          upper: 9
+          default_value: ${optimizer.compression_chunk_factor}
+          # type: categorical
+          # choices: [16, 32, 64, 128, 256, 512]
+          # default_value: ${optimizer.compression_chunk}
         optimizer.momentum:
           type: uniform_float
           lower: 0.85

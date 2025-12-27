@@ -28,6 +28,9 @@ class MinClassAccuracy(MulticlassAccuracy):
         return torch.min(per_class_acc)
 
 
+# TODO: Define metrics based on experiment (no HD95 for SMAC) (really not?)
+
+
 # TODO: Refactor num_classes hardcoding
 def get_metrics(
     task: str,

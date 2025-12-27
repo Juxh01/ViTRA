@@ -1,7 +1,7 @@
 defaults:
   - override hydra/sweeper: SMAC
 
-name: "${general.dataset_name}-${general.backbone_name}-GP"
+name: "${general.dataset_name}-${general.backbone_name}-GP-DeMo"
 description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
 general:
   seed: 10
@@ -33,18 +33,66 @@ optimizer:
   compression_topk: 32
   compression_chunk: 64
 
+  compression_rate: 0.5
+  compression_chunk_factor: 6
+
 distributed:
   nproc_per_node: 4
-  nnodes: 1
+  nnodes: 2
   node_rank: 0
   master_addr: "localhost"
   master_port: 29500
-  standalone: true # Setze auf false, wenn nnodes > 1
+  standalone: false # Setze auf false, wenn nnodes > 1
+  node1_addr: "ucloud@192.168.1.X"
 
 adversarial:
   enabled: false
   epsilon: 0.001
   norm: "Linf"    
   batch_size_per_device: 256
+
+hydra:
+  sweeper:
+    smac_class: smac.facade.blackbox_facade.BlackBoxFacade
+    smac_kwargs:
+      dask_client: null
+    scenario:
+      name: "vitra_classification_sweep"
+      seed: 10
+      n_trials: 75         
+      deterministic: false 
+      n_workers: 1
+      # SMAC treats these as costs to MINIMIZE.
+      objectives: ["classification_error", "aulc_error", "avg_epoch_time"]
+    search_space:
+      hyperparameters:
+        optimizer.lr:
+          type: uniform_float
+          lower: 5e-6
+          upper: 5e-4
+          log: true
+          default_value: ${optimizer.lr}
+        optimizer.compression_rate:
+          type: uniform_float
+          lower: 0.01
+          upper: 1.0
+          log: false
+          default_value: ${optimizer.compression_rate}
+        # TODO: Categorical seems not to work
+        optimizer.compression_chunk_factor:
+          type: uniform_int
+          lower: 4
+          upper: 9
+          default_value: ${optimizer.compression_chunk_factor}
+          # type: categorical
+          # choices: [16, 32, 64, 128, 256, 512]
+          # default_value: ${optimizer.compression_chunk}
+        optimizer.momentum:
+          type: uniform_float
+          lower: 0.85
+          upper: 0.999
+          log: false
+          default_value: ${optimizer.momentum}
+
   
   

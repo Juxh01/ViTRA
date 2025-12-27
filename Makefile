@@ -9,7 +9,7 @@ TESTS_DIR := tests
 CONF_CLS ?= configs/classification.yaml
 CONF_SEG ?= configs/segmentation.yaml
 
-# Defaults (Assumes you have activated your environment)
+# Defaults 
 PYTHON ?= python
 TORCHRUN ?= torchrun
 PYTEST ?= uv run pytest
