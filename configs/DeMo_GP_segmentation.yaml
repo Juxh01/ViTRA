@@ -86,6 +86,7 @@ hydra:
           type: uniform_int
           lower: 4
           upper: 9
+          log: false
           default_value: ${optimizer.compression_chunk_factor}
           # type: categorical
           # choices: [16, 32, 64, 128, 256, 512]

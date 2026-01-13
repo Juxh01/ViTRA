@@ -83,7 +83,7 @@ def run_worker(cfg: DictConfig) -> dict:
 
 def launch_worker(cfg: DictConfig) -> dict:
     """
-    DRIVER-MODE: Starts torchrun locally AND on the remote node via SSH (if nnodes > 1).
+    DRIVER-MODE: Starts torchrun locally AND on the remote node via SSH.
     """
     dist_cfg = cfg.distributed
 
@@ -163,7 +163,6 @@ def launch_worker(cfg: DictConfig) -> dict:
         return crash_result
 
 
-# CHANGED: Config name points to classification yaml
 @hydra.main(
     config_path="../../configs",
     config_name="DeMo_GP_classification",
