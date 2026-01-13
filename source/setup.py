@@ -5,6 +5,7 @@ from typing import Any, Dict
 import functools
 import os
 import random
+import subprocess
 
 import numpy as np
 import torch
@@ -52,15 +53,6 @@ def set_seed(seed: int):
         torch.cuda.manual_seed_all(seed)
     elif torch.mps.is_available():
         torch.mps.manual_seed(seed)
-
-
-def setup_process_group(device: str):
-    # Set the device for the current process
-    if device == "cuda":
-        torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
-    # Initialize the process group for distributed training
-    if not dist.is_initialized():
-        dist.init_process_group(backend="nccl")
 
 
 def steup_lr_scheduler(optim, config: Dict[str, Any]):
@@ -314,6 +306,56 @@ def get_ViT(config: Dict[str, Any]):
     else:
         raise ValueError(f"Unsupported task: {task}")
     return model
+
+
+def setup_process_group(device: str):
+    """
+    Initialize a torch.distributed process group.
+
+    Detects SLURM and sets MASTER_ADDR/PORT, RANK, WORLD_SIZE, LOCAL_RANK.
+    Respects existing torchrun env vars. Sets CUDA device when device == "cuda".
+    """
+    # Check for SLURM Environment (Hydra/Submitit)
+    if "SLURM_PROCID" in os.environ:
+        # Resolve Master Address from SLURM Nodelist
+        if "MASTER_ADDR" not in os.environ:
+            try:
+                cmd = "scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1"
+                master_addr = subprocess.check_output(cmd, shell=True).decode().strip()
+                os.environ["MASTER_ADDR"] = master_addr
+            except Exception:
+                raise ValueError(
+                    "No Masteradress for DDP process group from SLURM found. "
+                )
+
+        if "MASTER_PORT" not in os.environ:
+            os.environ["MASTER_PORT"] = "29500"
+
+        # Map SLURM variables to Torch variables
+        rank = int(os.environ["SLURM_PROCID"])
+        world_size = int(os.environ["SLURM_NTASKS"])
+        local_rank = int(os.environ["SLURM_LOCALID"])
+
+        os.environ["RANK"] = str(rank)
+        os.environ["WORLD_SIZE"] = str(world_size)
+        os.environ["LOCAL_RANK"] = str(local_rank)
+
+        print(
+            f"SLURM Setup: Rank {rank}/{world_size}, Local {local_rank}, Master {os.environ['MASTER_ADDR']}"
+        )
+
+    # Handle Torchrun
+    elif "LOCAL_RANK" in os.environ:
+        pass
+
+    # Initialize process group
+    if device == "cuda":
+        local_rank = int(os.environ.get("LOCAL_RANK", 0))
+        torch.cuda.set_device(local_rank)
+
+    if not dist.is_initialized():
+        # Initialize process group based on set environment variables
+        dist.init_process_group(backend="nccl")
 
 
 def setup_distributed_training(

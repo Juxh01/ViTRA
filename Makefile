@@ -81,50 +81,12 @@ segmentation:
 	$(eval TORCH_FLAGS := $(shell $(call build_torchrun_cmd,$(CONF_SEG))))
 	$(TORCHRUN) $(TORCH_FLAGS) source/experiments/segmentation.py 
 
+sweep-classification:
+	@echo "Starting SMAC Sweep with SLURM..."
+	$(PYTHON) source/experiments/DeMo_GP_classification.py \
+		-m
+
 sweep-segmentation:
-ifndef MASTER
-	$(error MASTER is undefined. Run: make sweep MASTER=192.168.1.X NODE1=user@192.168.1.Y)
-endif
-ifndef NODE1
-	$(error NODE1 is undefined. Run: make sweep MASTER=192.168.1.X NODE1=user@192.168.1.Y)
-endif
-	@echo "Starting SMAC Sweep Driver on Master Node..."
-	@echo "Master IP: $(MASTER)"
-	@echo "Node 1:    $(NODE1)"
-	$(PYTHON) source/experiments/DeMo_GP_segmentation.py distributed.master_addr=$(MASTER) \
-		distributed.node1_addr=$(NODE1) -m
-# --- SSH Cluster Automation ---
-
-# Run this on Node 0 (Master)
-setup-master:
-	@echo ">>> Generating SSH Key..."
-	@mkdir -p $(HOME)/.ssh
-	@chmod 700 $(HOME)/.ssh
-	# Generate key if it doesn't exist, preventing overwrite prompts
-	@if [ ! -f $(HOME)/.ssh/id_cluster ]; then \
-		ssh-keygen -t ed25519 -f $(HOME)/.ssh/id_cluster -N ""; \
-	fi
-	@echo ">>> Configuring SSH..."
-	@touch $(HOME)/.ssh/config
-	@chmod 600 $(HOME)/.ssh/config
-	@if ! grep -q "IdentityFile $(HOME)/.ssh/id_cluster" $(HOME)/.ssh/config; then \
-		echo "IdentityFile $(HOME)/.ssh/id_cluster" >> $(HOME)/.ssh/config; \
-	fi
-	@echo ""
-	@echo ">>> SUCCESS. COPY THE KEY BELOW TO RUN ON WORKER:"
-	@echo ""
-	@cat $(HOME)/.ssh/id_cluster.pub
-	@echo ""
-
-# Run this on Node 1 (Worker)
-# Usage: make setup-worker KEY="ssh-ed25519 AAAA..."
-setup-worker:
-ifndef KEY
-	$(error KEY is undefined. Run: make setup-worker KEY="paste_key_here")
-endif
-	@echo ">>> Authorizing Master Key..."
-	@mkdir -p $(HOME)/.ssh
-	@chmod 700 $(HOME)/.ssh
-	@echo "$(KEY)" >> $(HOME)/.ssh/authorized_keys
-	@chmod 600 $(HOME)/.ssh/authorized_keys
-	@echo ">>> Worker Configured."
+	@echo "Starting SMAC Sweep with SLURM..."
+	$(PYTHON) source/experiments/DeMo_GP_segmentation.py \
+		-m

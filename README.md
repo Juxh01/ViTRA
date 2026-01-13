@@ -37,28 +37,9 @@ make install
 ```
 
 This will:
-- Install SWIG dependency
-- Install the project in development mode with all dependencies
-- Set up pre-commit hooks for code quality
-
-**2. Cluster Setup (Multi-Node Only)**
-For distributed training, the Master node (Node 0) must be able to communicate with Worker nodes (Node 1+) via SSH without a password.
-
-  * **On Node 0 (Master):**
-    Generate the cluster key.
-
-    ```bash
-    make setup-master
-    ```
-
-    *Copy the public key output (starts with `ssh-ed25519 ...`).*
-
-  * **On Node 1+ (Workers):**
-    Authorize the master key.
-
-    ```bash
-    make setup-worker KEY="<PASTE_KEY_HERE>"
-    ```
+- Install the project in development mode (including dev dependencies)
+- Install and configure pre-commit hooks for code quality
+- Clone and install the SMAC Hydra sweeper dependency (`hydra-smac-sweeper`) into `.dependencies/`
 
 ## Usage & Experiments
 
@@ -74,6 +55,9 @@ make format
 
 # Run static code analysis and quality checks (ruff)
 make check
+
+# Run all pre-commit hooks
+make pre-commit
 
 # Run the test suite
 make test
@@ -110,6 +94,16 @@ To run a segmentation experiment with a custom configuration file:
 ```bash
 make segmentation CONF_SEG=configs/experiments/my_segmentation_config.yaml
 ```
+
+#### Hyperparameter Sweeps (SMAC)
+
+To run the SMAC sweeps for classification and segmentation:
+
+```bash
+make sweep-classification
+make sweep-segmentation
+```
+For this to work, a SLURM environment is required.
 
 ### Distributed Training Configuration
 

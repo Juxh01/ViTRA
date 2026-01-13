@@ -1,16 +1,17 @@
 defaults:
   - override hydra/sweeper: SMAC
+  - override hydra/launcher: submitit_slurm
 
 name: "${general.dataset_name}-${general.backbone_name}-GP-DeMo"
 description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
 general:
   seed: 10
-  backbone_name: "google/vit-base-patch16-224" # or None for random initialization
+  backbone_name: "google/vit-base-patch16-384" # or None for random initialization #TODO: Change to 384
   wandb_project: "ViTRA"
   experiment_name: ${name}
   task: "classification"
   data_dir: "${hydra:runtime.cwd}/data"
-  dataset_name: "Country211"
+  dataset_name: "Country211"  #TODO: Change
   num_classes: 211
 
 
@@ -43,13 +44,15 @@ distributed:
   master_addr: "localhost"
   master_port: 29500
   standalone: false # Setze auf false, wenn nnodes > 1
-  node1_addr: "ucloud@192.168.1.X"
 
-adversarial:
-  enabled: false
-  epsilon: 0.001
-  norm: "Linf"    
-  batch_size_per_device: 256
+hydra:
+  launcher:
+    partition: CLOUD
+    gpus_per_node: ${distributed.nproc_per_node}
+    tasks_per_node: ${distributed.nproc_per_node}
+    nodes: ${distributed.nnodes}
+    timeout_min: 45
+    
 
 hydra:
   sweeper:

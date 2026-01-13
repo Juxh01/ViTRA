@@ -1,5 +1,6 @@
 defaults:
   - override hydra/sweeper: SMAC
+  - override hydra/launcher: submitit_slurm
 
 name: "${general.dataset_name}-${general.backbone_name}-GP-DeMo"
 description: "Semantic Segmentation on ${general.dataset_name} using ${general.backbone_name} model"
@@ -44,15 +45,14 @@ distributed:
   master_addr: "localhost"
   master_port: 29500
   standalone: false # Setze auf false, wenn nnodes > 1
-  node1_addr: "ucloud@192.168.1.X"
 
-adversarial:
-  enabled: false
-  epsilon: 0.001
-  steps: 50       
-  loss: "mask-ce-bal" # oder "js-avg"
-  n_restarts: 1
-  batch_size_per_device: 48
+hydra:
+  launcher:
+    partition: CLOUD
+    gpus_per_node: ${distributed.nproc_per_node}
+    tasks_per_node: ${distributed.nproc_per_node}
+    nodes: ${distributed.nnodes}
+    timeout_min: 45
 
 hydra:
   sweeper:

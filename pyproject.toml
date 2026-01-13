@@ -22,6 +22,7 @@ dependencies = [
     "matplotlib",
     "hydra-core",
     "hydra-smac-sweeper @ git+https://github.com/automl/hydra-smac-sweeper.git",
+    "hydra-submitit-launcher",
     "omegaconf",
     "rliable",
     "setuptools<81",
