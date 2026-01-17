@@ -18,8 +18,8 @@ general:
 optimizer:
   # Optimizer settings
   lr: 1e-5
+  lr_head: 1e-4
   lr_power: 0.9
-  lr_factor: 10
   momentum: 0.9
   optimizer_str: "sgd"
   batch_size_per_device: 32
@@ -39,7 +39,7 @@ optimizer:
   compression_chunk_factor: 6
 
 distributed:
-  nproc_per_node: 4
+  nproc_per_node: 2
   nnodes: 2
   node_rank: 0
   master_addr: "localhost"
