@@ -46,6 +46,7 @@ distributed:
   master_port: 29500
   standalone: false # Setze auf false, wenn nnodes > 1
 
+
 hydra:
   launcher:
     partition: CLOUD
@@ -53,8 +54,6 @@ hydra:
     tasks_per_node: ${distributed.nproc_per_node}
     nodes: ${distributed.nnodes}
     timeout_min: 45
-
-hydra:
   sweeper:
     smac_class: smac.facade.blackbox_facade.BlackBoxFacade
     smac_kwargs:
