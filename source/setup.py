@@ -414,6 +414,7 @@ def setup_distributed_training(
         fsdp_kwargs={
             "auto_wrap_policy": auto_wrap_policy,
             "mixed_precision": mixed_precision,
+            "use_orig_params": True,
         },
         replicate_every=optim_config["replicate_every"],
         skip_every=optim_config["skip_every"],
