@@ -37,6 +37,11 @@ def main(cfg: DictConfig) -> dict:
     rank = int(os.environ["RANK"])
     run = None
 
+    wandb_key = cfg.get("wandb_api_key", None)
+    if rank == 0 and wandb_key:
+        print("Logging into WandB with explicit key...")
+        wandb.login(key=wandb_key)
+
     # Wandb on Rank 0
     if rank == 0:
         run = wandb.init(
