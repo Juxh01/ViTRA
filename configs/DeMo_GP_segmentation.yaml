@@ -39,7 +39,7 @@ optimizer:
   compression_chunk_factor: 6
 
 distributed:
-  nproc_per_node: 2
+  nproc_per_node: 1
   nnodes: 2
   node_rank: 0
   master_addr: "localhost"
