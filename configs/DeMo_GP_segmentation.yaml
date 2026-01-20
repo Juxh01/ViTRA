@@ -43,7 +43,7 @@ distributed:
   nnodes: 2
   node_rank: 0
   master_addr: "localhost"
-  master_port: 29500
+  master_port: 36918
   standalone: false # Setze auf false, wenn nnodes > 1
 
 

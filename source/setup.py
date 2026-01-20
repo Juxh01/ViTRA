@@ -34,7 +34,7 @@ from transformers import (
     ViTForImageClassification,
     ViTModel,
 )
-from transformers.models.dpt.modeling_dpt import DPTViTEmbeddings, DPTViTLayer
+from transformers.models.dpt.modeling_dpt import DPTViTLayer
 from transformers.models.vit.modeling_vit import ViTLayer
 
 # TODO: Actiavate checkpointing based on config
@@ -322,7 +322,7 @@ def setup_process_group(device: str):
             os.environ["MASTER_ADDR"] = "node0"
 
         if "MASTER_PORT" not in os.environ:
-            os.environ["MASTER_PORT"] = "29500"
+            os.environ["MASTER_PORT"] = "36918"
 
         # Map SLURM variables to Torch variables
         rank = int(os.environ["SLURM_PROCID"])
@@ -535,7 +535,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
-            DPTViTEmbeddings,
+            # DPTViTEmbeddings,
             # DPTFeatureFusionLayer, # DeToNATION fails here due to weights with no grad
             # DPTPreActResidualLayer, # DeToNATION fails here due to weights with no grad
             # DPTNeck,
