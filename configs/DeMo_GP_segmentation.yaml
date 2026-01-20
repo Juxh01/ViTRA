@@ -29,7 +29,7 @@ optimizer:
   # Replicator settings
   replicate_every: 1
   skip_every: null
-  shards: 2
+  shards: 1
   repl: "deto-demo"
   # Demo
   compression_topk: 32
