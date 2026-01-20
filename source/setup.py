@@ -567,7 +567,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
                 new_params.append(param)
 
         assert len(backbone_params) + len(new_params) == len(
-            list(model.parameters())
+            [p for p in model.parameters() if p.requires_grad]
         ), "Parameter count mismatch!"
         # Remove all param groups
         optimizer.param_groups = []
