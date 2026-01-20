@@ -322,7 +322,7 @@ def setup_process_group(device: str):
             os.environ["MASTER_ADDR"] = "node0"
 
         if "MASTER_PORT" not in os.environ:
-            os.environ["MASTER_PORT"] = "36918"
+            os.environ["MASTER_PORT"] = "27500"
 
         # Map SLURM variables to Torch variables
         rank = int(os.environ["SLURM_PROCID"])
@@ -553,9 +553,6 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         backbone_params = []
         new_params = []
 
-        import pprint
-
-        pprint.pprint(list(model.named_parameters()))
         # Recreate param groups
         for name, param in model.named_parameters():
             if not param.requires_grad:
@@ -568,7 +565,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
                 new_params.append(param)
 
         # assert len(backbone_params) + len(new_params) == len(
-        #     [p for p in model.parameters() if p.requires_grad]
+        #     list(model.parameters())
         # ), "Parameter count mismatch!"
         # Remove all param groups
         optimizer.param_groups = []
