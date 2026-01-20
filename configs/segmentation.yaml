@@ -47,11 +47,5 @@ adversarial:
   loss: "mask-ce-bal" # oder "js-avg"
   n_restarts: 1
   batch_size_per_device: 48
-
-hydra:
-  mode: MULTIRUN
-  sweeper:
-    params:
-      - adversarial.epsilon
   
   
