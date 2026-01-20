@@ -331,6 +331,10 @@ def setup_process_group(device: str):
         world_size = int(os.environ["SLURM_NTASKS"])
         local_rank = int(os.environ["SLURM_LOCALID"])
 
+        nnodes = int(os.environ.get("SLURM_NNODES", "1"))
+        local_world_size = world_size // nnodes if nnodes > 0 else 1
+        os.environ["LOCAL_WORLD_SIZE"] = str(local_world_size)
+
         os.environ["RANK"] = str(rank)
         os.environ["WORLD_SIZE"] = str(world_size)
         os.environ["LOCAL_RANK"] = str(local_rank)
