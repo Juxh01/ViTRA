@@ -5,7 +5,6 @@ from typing import Any, Dict
 import functools
 import os
 import random
-import subprocess
 
 import numpy as np
 import torch
@@ -36,8 +35,6 @@ from transformers import (
     ViTModel,
 )
 from transformers.models.dpt.modeling_dpt import (
-    DPTNeck,
-    DPTViTEmbeddings,
     DPTViTLayer,
 )
 from transformers.models.vit.modeling_vit import ViTLayer
@@ -248,6 +245,7 @@ def get_ViT(config: Dict[str, Any]):
         else:
             raise ValueError("Backbone name must be provided for segmentation task.")
 
+        # TODO: Reduce complexity of CNN head -> But check performance first
         dpt_base_config = DPTConfig(
             # --- ViT-Base Configuration (mostly default) ---
             hidden_size=768,
@@ -319,14 +317,7 @@ def setup_process_group(device: str):
     if "SLURM_PROCID" in os.environ:
         # Resolve Master Address from SLURM Nodelist
         if "MASTER_ADDR" not in os.environ:
-            try:
-                cmd = "scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1"
-                master_addr = subprocess.check_output(cmd, shell=True).decode().strip()
-                os.environ["MASTER_ADDR"] = master_addr
-            except Exception:
-                raise ValueError(
-                    "No Masteradress for DDP process group from SLURM found. "
-                )
+            os.environ["MASTER_ADDR"] = "node0"
 
         if "MASTER_PORT" not in os.environ:
             os.environ["MASTER_PORT"] = "29500"
@@ -532,14 +523,16 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         ),  # TODO: dynamic value?
         shuffle=False,
     )
+
+    # TODO: Only share DPTViTLayer (compare memory footprint first)
     model, optimizer = setup_distributed_training(
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
-            DPTViTEmbeddings,
+            # DPTViTEmbeddings,
             # DPTFeatureFusionLayer, # DeToNATION fails here due to weights with no grad
             # DPTPreActResidualLayer, # DeToNATION fails here due to weights with no grad
-            DPTNeck,
+            # DPTNeck,
         ),
         seed=seed,
         config=config,
@@ -550,7 +543,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
     backbone_name = config["general"].get("backbone_name", None)
     if backbone_name:
         base_lr = optim_config["lr"]
-        new_layer_mult = optim_config.get("new_layer_mult", 10.0)
+        head_lr = optim_config["lr_head"]
         backbone_params = []
         new_params = []
 
@@ -580,12 +573,12 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             optimizer.add_param_group(
                 {
                     "params": new_params,
-                    "lr": base_lr * new_layer_mult,
+                    "lr": head_lr,
                     "name": "head",
                 }
             )
         print(
-            f"LR Setup Complete: Pretrained params at {base_lr}, new params at {base_lr * new_layer_mult}"
+            f"LR Setup Complete: Pretrained params at {base_lr}, new params at {head_lr}"
         )
 
     scheduler = steup_lr_scheduler(optimizer, config)
