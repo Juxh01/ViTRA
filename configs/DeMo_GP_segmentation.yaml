@@ -54,6 +54,9 @@ hydra:
     tasks_per_node: ${distributed.nproc_per_node}
     nodes: ${distributed.nnodes}
     timeout_min: 45
+  sweeper:
+    params:
+      optimizer.compression_rate: 0.2,0.5,0.8
   # sweeper:
   #   smac_class: smac.facade.blackbox_facade.BlackBoxFacade
   #   smac_kwargs:
