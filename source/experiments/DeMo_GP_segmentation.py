@@ -23,6 +23,7 @@ def main(cfg: DictConfig) -> dict:
     cfg.optimizer.compression_topk = max(
         1, int(cfg.optimizer.compression_chunk * cfg.optimizer.compression_rate)
     )
+    cfg.optimizer.compression_topk = 2
 
     cfg.optimizer.compression_chunk = 2 ** int(cfg.optimizer.compression_chunk_factor)
 
@@ -61,7 +62,7 @@ def main(cfg: DictConfig) -> dict:
     )
     dist.barrier()
 
-    # 6. Result Dictionary (SMAC minimizes all objectives)
+    # Result Dictionary (SMAC minimizes all objectives)
     result_dict = {
         "segmentation_error": 1.0 - mIoU,
         "aulc_error": 1.0 - avg_aulc,
