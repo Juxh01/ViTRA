@@ -46,6 +46,16 @@ distributed:
   master_port: 29500
   standalone: false # Setze auf false, wenn nnodes > 1
 
+cluster:
+  _target_: dask_jobqueue.SLURMCluster
+  queue: cpu_short
+  #  account: myaccount
+  cores: 1
+  memory: 1 GB
+  walltime: 00:30:00
+  processes: 1
+  log_directory: tmp/smac_dask_slurm
+
 
 hydra:
   launcher:
@@ -57,7 +67,10 @@ hydra:
   sweeper:
     smac_class: smac.facade.blackbox_facade.BlackBoxFacade
     smac_kwargs:
-      dask_client: null
+      smac_kwargs:
+      dask_client:
+        _target_: dask.distributed.Client
+        address: ${create_cluster:${cluster},${hydra.sweeper.scenario.n_workers}}
     scenario:
       name: "vitra_segmentation_sweep"
       seed: 10
