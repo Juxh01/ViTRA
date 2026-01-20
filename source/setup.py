@@ -553,6 +553,9 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         backbone_params = []
         new_params = []
 
+        import pprint
+
+        pprint.pprint(list(model.named_parameters()))
         # Recreate param groups
         for name, param in model.named_parameters():
             if not param.requires_grad:
