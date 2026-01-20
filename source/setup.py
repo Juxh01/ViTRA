@@ -95,6 +95,8 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
                 transform=transforms,
             )
         elif dataset_name == "SBDataset":
+            if split == "valid":
+                split = "val"
             dataset = datasets.SBDataset(
                 root=data_dir,
                 image_set=split,
@@ -110,6 +112,8 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
                 transform=transforms,
             )
         elif dataset_name == "VOCSegmentation":
+            if split == "valid":
+                split = "val"
             dataset = datasets.VOCSegmentation(
                 root=data_dir,
                 year="2012",
