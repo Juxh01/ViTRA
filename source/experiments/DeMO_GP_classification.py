@@ -62,7 +62,7 @@ def main(cfg: DictConfig) -> dict:
     )
     dist.barrier()
 
-    # 6. Result Dictionary (SMAC minimizes all objectives)
+    # Result Dictionary (SMAC minimizes all objectives)
     result_dict = {
         "classification_error": 1.0 - acc1,
         "aulc_error": 1.0 - avg_aulc,

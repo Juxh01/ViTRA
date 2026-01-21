@@ -6,13 +6,14 @@ name: "${general.dataset_name}-${general.backbone_name}-GP-DeMo"
 description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
 general:
   seed: 10
-  backbone_name: "google/vit-base-patch16-384" # or None for random initialization #TODO: Change to 384
+  backbone_name: "google/vit-base-patch16-384" 
   wandb_project: "ViTRA"
   experiment_name: ${name}
   task: "classification"
   data_dir: "${hydra:runtime.cwd}/data"
   dataset_name: "Country211"  #TODO: Change
   num_classes: 211
+  log_model: false
 
 
 optimizer:
@@ -38,11 +39,11 @@ optimizer:
   compression_chunk_factor: 6
 
 distributed:
-  nproc_per_node: 4
+  nproc_per_node: 2
   nnodes: 2
   node_rank: 0
-  master_addr: "localhost"
-  master_port: 29500
+  master_addr: 10.42.22.19
+  master_port: 29501
   standalone: false # Setze auf false, wenn nnodes > 1
 
 hydra:

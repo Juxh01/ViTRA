@@ -308,7 +308,7 @@ def get_ViT(config: Dict[str, Any]):
     return model
 
 
-def setup_process_group(device: str):
+def setup_process_group(device: str, config: Dict[str, Any] = None):
     """
     Initialize a torch.distributed process group.
 
@@ -319,10 +319,10 @@ def setup_process_group(device: str):
     if "SLURM_PROCID" in os.environ:
         # Resolve Master Address from SLURM Nodelist
         if "MASTER_ADDR" not in os.environ:
-            os.environ["MASTER_ADDR"] = "node0"
+            os.environ["MASTER_ADDR"] = config["distributed"]["master_addr"]
 
         if "MASTER_PORT" not in os.environ:
-            os.environ["MASTER_PORT"] = "27500"
+            os.environ["MASTER_PORT"] = config["distributed"]["master_port"]
 
         # Map SLURM variables to Torch variables
         rank = int(os.environ["SLURM_PROCID"])

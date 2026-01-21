@@ -31,7 +31,6 @@ class MinClassAccuracy(MulticlassAccuracy):
 # TODO: Define metrics based on experiment (no HD95 for SMAC) (really not?)
 
 
-# TODO: Refactor num_classes hardcoding
 def get_metrics(
     task: str,
     device: str,
@@ -281,7 +280,8 @@ def train(
         scheduler.step()
 
     ### Save final model and best model ###
-    best_model_logger.upload_final_artifact(run=run, rank=rank)
+    if config.get("general", {}).get("log_model", True):
+        best_model_logger.upload_final_artifact(run=run, rank=rank)
     # Collect the full state dict on CPU
     save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
     with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
@@ -292,14 +292,15 @@ def train(
         model_filename = f"model-epoch_{num_epochs}.pt"
         torch.save(cpu_state, model_filename)
 
-        artifact = wandb.Artifact(
-            name=f"model-{run.id}",
-            type="model",
-            description=f"Trained model state_dict after {num_epochs} epochs",
-        )
+        if config.get("general", {}).get("log_model", True):
+            artifact = wandb.Artifact(
+                name=f"model-{run.id}",
+                type="model",
+                description=f"Trained model state_dict after {num_epochs} epochs",
+            )
 
-        artifact.add_file(model_filename)
-        run.log_artifact(artifact)
+            artifact.add_file(model_filename)
+            run.log_artifact(artifact)
 
         print("Model saved and uploaded.")
 

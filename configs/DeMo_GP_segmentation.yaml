@@ -14,6 +14,7 @@ general:
   data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
   dataset_name: "SBDataset"
   num_classes: 21
+  log_model: false
 
 optimizer:
   # Optimizer settings
@@ -42,8 +43,8 @@ distributed:
   nproc_per_node: 1
   nnodes: 2
   node_rank: 0
-  master_addr: "localhost"
-  master_port: 36918
+  master_addr: 10.42.22.19
+  master_port: 27501
   standalone: false # Setze auf false, wenn nnodes > 1
 
 
@@ -56,7 +57,7 @@ hydra:
     timeout_min: 45
   sweeper:
     params:
-      optimizer.compression_rate: 0.2,0.5,0.8
+      optimizer.compression_rate: 0.2
   # sweeper:
   #   smac_class: smac.facade.blackbox_facade.BlackBoxFacade
   #   smac_kwargs:

@@ -1,0 +1,26 @@
+{
+  "os": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "python": "CPython 3.11.12",
+  "startedAt": "2026-01-21T14:00:30.215988Z",
+  "program": "<python with no main file>",
+  "git": {
+    "remote": "https://github.com/Juxh01/ViTRA.git",
+    "commit": "e6c03426a44817b2be0b9b254d530cccdcef33f1"
+  },
+  "email": "julius123@alpenjodel.de",
+  "root": "/home/julius/SDU/AdvAI/ViTRA",
+  "host": "DESKTOP-LDQ7B16",
+  "executable": "/home/julius/SDU/AdvAI/ViTRA/.venv/bin/python",
+  "cpu_count": 4,
+  "cpu_count_logical": 8,
+  "disk": {
+    "/": {
+      "total": "1081101176832",
+      "used": "71455801344"
+    }
+  },
+  "memory": {
+    "total": "8185405440"
+  },
+  "writerId": "cmbv20hru2m63bylnqbtq65v3lbjr9zn"
+}

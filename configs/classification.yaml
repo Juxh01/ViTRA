@@ -2,7 +2,7 @@ name: "${general.dataset_name}-${general.backbone_name}"
 description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
 general:
   seed: 10
-  backbone_name: "google/vit-base-patch16-224" # or None for random initialization
+  backbone_name: "google/vit-base-patch16-384" 
   wandb_project: "ViTRA"
   experiment_name: ${name}
   task: "classification"
