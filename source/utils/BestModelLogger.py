@@ -108,7 +108,7 @@ class BestModelLogger:
                         raw_img_pil = self.fixed_raw_data[i]["raw_img"]
                         # Convert to numpy to ensure WandB sees (H, W, C) matching the mask
                         raw_img_np = np.array(raw_img_pil)
-                        raw_target = self.fixed_raw_data[i]["raw_target"]
+                        raw_target = self.fixed_raw_data[i]["raw_target"].squeeze()
 
                         # Get the logits for this specific sample (C, H_model, W_model)
                         sample_logits = logits[i].unsqueeze(0)
