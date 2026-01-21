@@ -128,6 +128,8 @@ class BestModelLogger:
                         # Get prediction mask
                         pred_mask = sample_logits.argmax(dim=1).squeeze().cpu().numpy()
 
+                        print(pred_mask.shape, raw_target.shape)
+
                         # Create overlayed WandB image
                         wandb_images.append(
                             wandb.Image(

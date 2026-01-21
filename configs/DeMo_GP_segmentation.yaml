@@ -10,6 +10,7 @@ general:
   backbone_name: "google/vit-base-patch16-384" # or None for random initialization
   wandb_project: "ViTRA"
   experiment_name: ${name}
+  log_offline: true
   task: "segmentation"
   data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
   dataset_name: "SBDataset"

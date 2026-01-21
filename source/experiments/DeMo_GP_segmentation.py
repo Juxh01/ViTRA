@@ -37,10 +37,9 @@ def main(cfg: DictConfig) -> dict:
     rank = int(os.environ["RANK"])
     run = None
 
-    wandb_key = cfg.get("wandb_api_key", None)
-    if rank == 0 and wandb_key:
-        print("Logging into WandB with explicit key...")
-        wandb.login(key=wandb_key)
+    # Offline as wandb does not work currently on ucloud
+    if cfg.general.log_offline:
+        os.environ["WANDB_MODE"] = "offline"
 
     # Wandb on Rank 0
     if rank == 0:
