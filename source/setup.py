@@ -426,7 +426,7 @@ def setup_distributed_training(
 
 
 def setup_classification(device: str, config: Dict[str, Any]):
-    setup_process_group(device)
+    setup_process_group(device, config)
     batch_size = config["optimizer"]["batch_size_per_device"]
     seed = config["general"]["seed"]
     set_seed(seed)
@@ -494,7 +494,7 @@ def setup_classification(device: str, config: Dict[str, Any]):
 
 
 def setup_segmentation(device: str, config: Dict[str, Any]):
-    setup_process_group(device)
+    setup_process_group(device, config)
     batch_size = config["optimizer"]["batch_size_per_device"]
     seed = config["general"]["seed"]
     set_seed(seed)
