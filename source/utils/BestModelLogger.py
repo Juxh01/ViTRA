@@ -53,8 +53,11 @@ class BestModelLogger:
         self.device = device
         self.num_images = num_images
         self.task = config["general"]["task"]
+        self.log_images = self.task == "segmentation" and config["general"].get(
+            "log_images_wandb", False
+        )
 
-        if self.task == "segmentation":
+        if self.log_images:
             # Initialize the dataset without transforms
             self.raw_dataset = get_dataset(config, split="val", transforms=None)
 
@@ -88,7 +91,7 @@ class BestModelLogger:
         if current_metric > self.best_metric:
             self.best_metric = current_metric
 
-            if self.task == "segmentation":
+            if self.log_images:
                 # --- Inference ---
                 model.eval()
                 with torch.no_grad():
@@ -127,8 +130,6 @@ class BestModelLogger:
 
                         # Get prediction mask
                         pred_mask = sample_logits.argmax(dim=1).squeeze().cpu().numpy()
-
-                        print(pred_mask.shape, raw_target.shape)
 
                         # Create overlayed WandB image
                         wandb_images.append(

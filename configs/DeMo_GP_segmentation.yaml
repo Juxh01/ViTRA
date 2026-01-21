@@ -15,7 +15,8 @@ general:
   data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
   dataset_name: "SBDataset"
   num_classes: 21
-  log_model: false
+  log_model_wandb: false
+  log_images_wandb: false
 
 optimizer:
   # Optimizer settings

@@ -13,7 +13,7 @@ general:
   data_dir: "${hydra:runtime.cwd}/data"
   dataset_name: "Country211"  #TODO: Change
   num_classes: 211
-  log_model: false
+  log_model_wandb: false
 
 
 optimizer:
