@@ -318,11 +318,9 @@ def setup_process_group(device: str, config: Dict[str, Any] = None):
     # Check for SLURM Environment (Hydra/Submitit)
     if "SLURM_PROCID" in os.environ:
         # Resolve Master Address from SLURM Nodelist
-        if "MASTER_ADDR" not in os.environ:
-            os.environ["MASTER_ADDR"] = config["distributed"]["master_addr"]
+        os.environ["MASTER_ADDR"] = config["distributed"]["master_addr"]
 
-        if "MASTER_PORT" not in os.environ:
-            os.environ["MASTER_PORT"] = str(config["distributed"]["master_port"])
+        os.environ["MASTER_PORT"] = str(config["distributed"]["master_port"])
 
         # Map SLURM variables to Torch variables
         rank = int(os.environ["SLURM_PROCID"])
