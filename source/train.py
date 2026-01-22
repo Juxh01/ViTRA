@@ -13,7 +13,15 @@ from torchmetrics.classification import (
     MulticlassAccuracy,
     MulticlassAveragePrecision,
     MulticlassCalibrationError,
+    MulticlassF1Score,
     MulticlassJaccardIndex,
+    MulticlassRecall,
+    MultilabelAccuracy,
+    MultilabelAveragePrecision,
+    MultilabelExactMatch,
+    MultilabelF1Score,
+    MultilabelJaccardIndex,
+    MultilabelRecall,
 )
 from tqdm import tqdm
 
@@ -26,6 +34,11 @@ class MinClassAccuracy(MulticlassAccuracy):
     def compute(self):
         per_class_acc = super().compute()
         return torch.min(per_class_acc)
+
+
+class MinClassJaccard(MultilabelJaccardIndex):
+    def compute(self):
+        return torch.min(super().compute())
 
 
 # TODO: Define metrics based on experiment (no HD95 for SMAC) (really not?)
@@ -42,21 +55,52 @@ def get_metrics(
     :return: A tuple of (train_metrics, val_metrics).
     """
     if task == "classification":
-        metrics = MetricCollection(
-            {
-                "acc": MulticlassAccuracy(
-                    num_classes=num_classes,
-                ),
-                "acc_top5": MulticlassAccuracy(num_classes=num_classes, top_k=5),
-                "ece": MulticlassCalibrationError(
-                    num_classes=num_classes, n_bins=15, norm="l1"
-                ),  # from "On Calibration of Modern Neural Networks"
-                "map": MulticlassAveragePrecision(
-                    num_classes=num_classes, average="macro"
-                ),
-                "min_acc": MinClassAccuracy(num_classes=num_classes, average=None),
-            }
-        )
+        # Hardcoded for PASCAL VOC multi-label classification #TODO
+        is_multilabel = num_classes == 20
+        if is_multilabel:
+            metrics = MetricCollection(
+                {
+                    "acc": MultilabelAccuracy(
+                        num_labels=num_classes, threshold=0.5, average="macro"
+                    ),
+                    "map": MultilabelAveragePrecision(
+                        num_labels=num_classes, average="macro"
+                    ),
+                    "recall": MultilabelRecall(
+                        num_labels=num_classes, average="macro", threshold=0.5
+                    ),
+                    "jaccard": MultilabelJaccardIndex(
+                        num_labels=num_classes, threshold=0.5, average="macro"
+                    ),
+                    "exact_match": MultilabelExactMatch(
+                        num_labels=num_classes, threshold=0.5
+                    ),
+                    "min_jaccard": MinClassJaccard(
+                        num_labels=num_classes, threshold=0.5, average=None
+                    ),
+                    "f1": MultilabelF1Score(
+                        num_labels=num_classes, threshold=0.5, average="macro"
+                    ),
+                }
+            )
+        # Multi-class classification
+        else:
+            metrics = MetricCollection(
+                {
+                    "acc": MulticlassAccuracy(
+                        num_classes=num_classes,
+                    ),
+                    "acc_top5": MulticlassAccuracy(num_classes=num_classes, top_k=5),
+                    "ece": MulticlassCalibrationError(
+                        num_classes=num_classes, n_bins=15, norm="l1"
+                    ),  # from "On Calibration of Modern Neural Networks"
+                    "map": MulticlassAveragePrecision(
+                        num_classes=num_classes, average="macro"
+                    ),
+                    "min_acc": MinClassAccuracy(num_classes=num_classes, average=None),
+                    "f1": MulticlassF1Score(num_classes=num_classes, average="macro"),
+                }
+            )
     elif task == "segmentation":
         metrics = MetricCollection(
             {
@@ -83,6 +127,12 @@ def get_metrics(
                 ),
                 "ece": MulticlassCalibrationError(
                     num_classes=num_classes, n_bins=15, norm="l1", ignore_index=255
+                ),
+                "recall": MulticlassRecall(
+                    num_classes=num_classes, ignore_index=255, average="macro"
+                ),
+                "dice": MulticlassF1Score(
+                    num_classes=num_classes, ignore_index=255, average="macro"
                 ),
             }
         )
