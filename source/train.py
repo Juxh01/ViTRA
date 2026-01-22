@@ -286,11 +286,10 @@ def train(
         cpu_state = model.state_dict()
 
     if rank == 0:
-        print("Saving final model to WandB...")
-        model_filename = f"model-epoch_{num_epochs}.pt"
-        torch.save(cpu_state, model_filename)
-
-        if config.get("general", {}).get("log_model", True):
+        if config.get("general", {}).get("log_model_wandb", True):
+            print("Saving final model to WandB...")
+            model_filename = f"model-epoch_{num_epochs}.pt"
+            torch.save(cpu_state, model_filename)
             artifact = wandb.Artifact(
                 name=f"model-{run.id}",
                 type="model",

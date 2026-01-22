@@ -56,6 +56,7 @@ class BestModelLogger:
         self.log_images = (self.task == "segmentation") and config["general"].get(
             "log_images_wandb", False
         )
+        self.log_model = config["general"].get("log_model_wandb", True)
         if self.log_images is True:
             # Initialize the dataset without transforms
             self.raw_dataset = get_dataset(config, split="val", transforms=None)
@@ -162,11 +163,13 @@ class BestModelLogger:
                         )
 
             # --- Save Model State (New API) ---
-            options = StateDictOptions(full_state_dict=True, cpu_offload=True)
-            model_state_dict, _ = get_state_dict(model, optimizers=(), options=options)
-
-            if rank == 0:
-                torch.save(model_state_dict, "best_model.pt")
+            if self.log_model is True:
+                options = StateDictOptions(full_state_dict=True, cpu_offload=True)
+                model_state_dict, _ = get_state_dict(
+                    model, optimizers=(), options=options
+                )
+                if rank == 0:
+                    torch.save(model_state_dict, "best_model.pt")
 
     def upload_final_artifact(self, run, rank):
         """Uploads the locally saved best model to WandB at the end of training."""
