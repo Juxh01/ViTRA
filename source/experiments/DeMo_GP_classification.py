@@ -21,11 +21,11 @@ def main(cfg: DictConfig) -> dict:
     warnings.filterwarnings("ignore", message=".*Using a non-tuple sequence*")
 
     # Calculates topk based on rate * chunk, guaranteed >= 1
-    cfg.optimizer.compression_topk = max(
-        1, int(cfg.optimizer.compression_chunk * cfg.optimizer.compression_rate)
-    )
+    # cfg.optimizer.compression_topk = max(
+    #     1, int(cfg.optimizer.compression_chunk * cfg.optimizer.compression_rate)
+    # )
 
-    cfg.optimizer.compression_chunk = 2 ** int(cfg.optimizer.compression_chunk_factor)
+    # cfg.optimizer.compression_chunk = 2 ** int(cfg.optimizer.compression_chunk_factor)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     config_dict = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
@@ -37,6 +37,10 @@ def main(cfg: DictConfig) -> dict:
 
     rank = int(os.environ["RANK"])
     run = None
+
+    # Offline as wandb does not work currently on ucloud
+    if cfg.general.log_offline:
+        os.environ["WANDB_MODE"] = "offline"
 
     # Wandb on Rank 0
     if rank == 0:
