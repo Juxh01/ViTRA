@@ -152,90 +152,137 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
 
 def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True):
     task = config["general"]["task"]
-    if task == "classification":
-        if split == "train":
-            transforms = T.Compose(
-                [
-                    T.RandomResizedCrop(size=(224, 224), scale=(0.5, 2.0)),
-                    T.RandomHorizontalFlip(),
-                    T.ToImage(),
-                    T.ToDtype(
-                        dtype={
-                            tv_tensors.Image: torch.float32,
-                            tv_tensors.Mask: torch.int64,
-                            "others": None,
-                        },
-                        scale=True,
-                    ),
-                ]
-            )
-        else:
-            transforms = T.Compose(
-                [
-                    T.Resize(size=(224, 224)),
-                    T.ToImage(),
-                    T.ToDtype(
-                        dtype={
-                            tv_tensors.Image: torch.float32,
-                            tv_tensors.Mask: torch.int64,
-                            "others": None,
-                        },
-                        scale=True,
-                    ),
-                ]
-            )
+    # if task == "classification":
+    #     if split == "train":
+    #         transforms = T.Compose(
+    #             [
+    #                 T.RandomResizedCrop(size=(224, 224), scale=(0.5, 2.0)),
+    #                 T.RandomHorizontalFlip(),
+    #                 T.ToImage(),
+    #                 T.ToDtype(
+    #                     dtype={
+    #                         tv_tensors.Image: torch.float32,
+    #                         tv_tensors.Mask: torch.int64,
+    #                         "others": None,
+    #                     },
+    #                     scale=True,
+    #                 ),
+    #             ]
+    #         )
+    #     else:
+    #         transforms = T.Compose(
+    #             [
+    #                 T.Resize(size=(224, 224)),
+    #                 T.ToImage(),
+    #                 T.ToDtype(
+    #                     dtype={
+    #                         tv_tensors.Image: torch.float32,
+    #                         tv_tensors.Mask: torch.int64,
+    #                         "others": None,
+    #                     },
+    #                     scale=True,
+    #                 ),
+    #             ]
+    #         )
 
-    elif task == "segmentation":
-        if split == "train":
-            transforms = T.Compose(
-                [
-                    T.RandomShortestSize(
-                        min_size=int(224 * 0.5),
-                        max_size=int(224 * 2.0),  # Change 384
-                    ),
-                    T.RandomCrop(
-                        size=(224, 224),  # Change 384
-                        pad_if_needed=True,
-                        fill=0,
-                        padding_mode="constant",
-                    ),
-                    T.RandomRotation(degrees=(-15, 15)),
-                    T.RandomHorizontalFlip(p=0.5),
-                    T.RandomGrayscale(p=0.05),
-                    T.ColorJitter(
-                        brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1
-                    ),
-                    # T.RandomApply(
-                    #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
-                    # ),
-                    T.ToImage(),
-                    T.ToDtype(
-                        dtype={
-                            tv_tensors.Image: torch.float32,
-                            tv_tensors.Mask: torch.int64,
-                            "others": None,
-                        },
-                        scale=True,
-                    ),
-                ]
-            )
-        else:
-            transforms = T.Compose(
-                [
-                    T.Resize(size=(224, 224)),  # Change 384
-                    T.ToImage(),
-                    T.ToDtype(
-                        dtype={
-                            tv_tensors.Image: torch.float32,
-                            tv_tensors.Mask: torch.int64,
-                            "others": None,
-                        },
-                        scale=True,
-                    ),
-                ],
-            )
+    # elif task == "segmentation":
+    #     if split == "train":
+    #         transforms = T.Compose(
+    #             [
+    #                 T.RandomShortestSize(
+    #                     min_size=int(224 * 0.5),
+    #                     max_size=int(224 * 2.0),  # Change 384
+    #                 ),
+    #                 T.RandomCrop(
+    #                     size=(224, 224),  # Change 384
+    #                     pad_if_needed=True,
+    #                     fill=0,
+    #                     padding_mode="constant",
+    #                 ),
+    #                 T.RandomRotation(degrees=(-15, 15)),
+    #                 T.RandomHorizontalFlip(p=0.5),
+    #                 T.RandomGrayscale(p=0.05),
+    #                 T.ColorJitter(
+    #                     brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1
+    #                 ),
+    #                 # T.RandomApply(
+    #                 #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
+    #                 # ),
+    #                 T.ToImage(),
+    #                 T.ToDtype(
+    #                     dtype={
+    #                         tv_tensors.Image: torch.float32,
+    #                         tv_tensors.Mask: torch.int64,
+    #                         "others": None,
+    #                     },
+    #                     scale=True,
+    #                 ),
+    #             ]
+    #         )
+    #     else:
+    #         transforms = T.Compose(
+    #             [
+    #                 T.Resize(size=(224, 224)),  # Change 384
+    #                 T.ToImage(),
+    #                 T.ToDtype(
+    #                     dtype={
+    #                         tv_tensors.Image: torch.float32,
+    #                         tv_tensors.Mask: torch.int64,
+    #                         "others": None,
+    #                     },
+    #                     scale=True,
+    #                 ),
+    #             ],
+    #         )
+    # else:
+    #     raise ValueError(f"Unsupported task: {task}")
+
+    if split == "train":
+        transforms = T.Compose(
+            [
+                T.RandomShortestSize(
+                    min_size=int(224 * 0.5),
+                    max_size=int(224 * 2.0),  # Change 384
+                ),
+                T.RandomCrop(
+                    size=(224, 224),  # Change 384
+                    pad_if_needed=True,
+                    fill=0,
+                    padding_mode="constant",
+                ),
+                T.RandomRotation(degrees=(-15, 15)),
+                T.RandomHorizontalFlip(p=0.5),
+                T.RandomGrayscale(p=0.05),
+                T.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1),
+                # T.RandomApply(
+                #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
+                # ),
+                T.ToImage(),
+                T.ToDtype(
+                    dtype={
+                        tv_tensors.Image: torch.float32,
+                        tv_tensors.Mask: torch.int64,
+                        "others": None,
+                    },
+                    scale=True,
+                ),
+            ]
+        )
     else:
-        raise ValueError(f"Unsupported task: {task}")
+        transforms = T.Compose(
+            [
+                T.Resize(size=(224, 224)),  # Change 384
+                T.ToImage(),
+                T.ToDtype(
+                    dtype={
+                        tv_tensors.Image: torch.float32,
+                        tv_tensors.Mask: torch.int64,
+                        "others": None,
+                    },
+                    scale=True,
+                ),
+            ],
+        )
     if add_normalize:
         if task == "classification":
             normalize = T.Normalize(
