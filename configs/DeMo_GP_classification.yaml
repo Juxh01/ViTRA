@@ -31,7 +31,7 @@ optimizer:
   # Replicator settings
   replicate_every: 1
   skip_every: null
-  shards: 2
+  shards: 1
   repl: "deto-demo"
   # Demo
   compression_topk: 32
@@ -41,7 +41,7 @@ optimizer:
   compression_chunk_factor: 6
 
 distributed:
-  nproc_per_node: 2
+  nproc_per_node: 1
   nnodes: 2
   node_rank: 0
   master_addr: 10.42.22.19
@@ -57,7 +57,7 @@ hhydra:
     timeout_min: 45
   sweeper:
     params:
-      optimizer.compression_rate: 0.2
+      optimizer.compression_topk: 32
     
 
 # hydra:
