@@ -174,10 +174,11 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
             transforms = T.Compose(
                 [
                     T.RandomShortestSize(
-                        min_size=int(384 * 0.5), max_size=int(384 * 2.0)
+                        min_size=int(224 * 0.5),
+                        max_size=int(224 * 2.0),  # Change 384
                     ),
                     T.RandomCrop(
-                        size=(384, 384),
+                        size=(224, 224),  # Change 384
                         pad_if_needed=True,
                         fill=0,
                         padding_mode="constant",
@@ -205,7 +206,7 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
         else:
             transforms = T.Compose(
                 [
-                    T.Resize(size=(384, 384)),
+                    T.Resize(size=(224, 224)),  # Change 384
                     T.ToImage(),
                     T.ToDtype(
                         dtype={
@@ -268,7 +269,7 @@ def get_ViT(config: Dict[str, Any]):
             attention_probs_dropout_prob=0.0,
             initializer_range=0.02,
             layer_norm_eps=1e-12,
-            image_size=384,
+            image_size=224,  # Change 384
             patch_size=16,
             num_channels=3,
             qkv_bias=True,

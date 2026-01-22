@@ -7,7 +7,7 @@ description: "Semantic Segmentation on ${general.dataset_name} using ${general.b
 seed: 10
 general:
   seed: ${seed}
-  backbone_name: "google/vit-base-patch16-384" # or None for random initialization
+  backbone_name: "google/vit-base-patch16-224" # or None for random initialization
   wandb_project: "ViTRA"
   experiment_name: ${name}
   log_offline: true
@@ -35,7 +35,7 @@ optimizer:
   shards: 1
   repl: "deto-demo"
   # Demo
-  compression_topk: 32
+  compression_topk: 4
   compression_chunk: 64
   # Random
   compression_rate: 0.5
