@@ -48,7 +48,7 @@ distributed:
   master_port: 29501
   standalone: false # Setze auf false, wenn nnodes > 1
 
-hhydra:
+hydra:
   launcher:
     partition: CLOUD
     gpus_per_node: ${distributed.nproc_per_node}
