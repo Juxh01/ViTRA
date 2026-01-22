@@ -302,8 +302,10 @@ def get_ViT(config: Dict[str, Any]):
             num_labels=config["general"]["num_classes"],  # VOC has 21 classes
             # --- Decoder Configuration (default configuration) ---
             reassemble_factors=[4, 2, 1, 0.5],
-            neck_hidden_sizes=[96, 192, 384, 768],
-            fusion_hidden_size=256,
+            # neck_hidden_sizes=[96, 192, 384, 768],
+            neck_hidden_sizes=[48, 96, 192, 384],
+            # fusion_hidden_size=256,
+            fusion_hidden_size=64,
             head_in_index=-1,
             use_batch_norm_in_fusion_residual=False,
             use_bias_in_fusion_residual=True,
