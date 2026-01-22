@@ -38,7 +38,7 @@ def main(cfg: DictConfig) -> dict:
     run = None
 
     # Offline as wandb does not work currently on ucloud
-    if cfg.general.log_model_wandb:
+    if cfg.general.log_offline:
         os.environ["WANDB_MODE"] = "offline"
 
     # Wandb on Rank 0

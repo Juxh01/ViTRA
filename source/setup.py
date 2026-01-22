@@ -34,7 +34,7 @@ from transformers import (
     ViTForImageClassification,
     ViTModel,
 )
-from transformers.models.dpt.modeling_dpt import DPTViTLayer
+from transformers.models.dpt.modeling_dpt import DPTNeck, DPTViTLayer
 from transformers.models.vit.modeling_vit import ViTLayer
 
 # TODO: Actiavate checkpointing based on config
@@ -534,9 +534,9 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         transformer_layer_cls=(
             DPTViTLayer,
             # DPTViTEmbeddings,
-            # DPTFeatureFusionLayer, # DeToNATION fails here due to weights with no grad
-            # DPTPreActResidualLayer, # DeToNATION fails here due to weights with no grad
-            # DPTNeck,
+            # DPTFeatureFusionLayer,  # DeToNATION fails here due to weights with no grad
+            # DPTPreActResidualLayer,  # DeToNATION fails here due to weights with no grad
+            DPTNeck,
         ),
         seed=seed,
         config=config,
@@ -562,9 +562,9 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
             else:
                 new_params.append(param)
 
-        # assert len(backbone_params) + len(new_params) == len(
-        #     list(model.parameters())
-        # ), "Parameter count mismatch!"
+        assert len(backbone_params) + len(new_params) == len(
+            list(model.parameters())
+        ), "Parameter count mismatch!"
         # Remove all param groups
         optimizer.param_groups = []
         if backbone_params:
