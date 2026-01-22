@@ -26,7 +26,7 @@ optimizer:
   optimizer_str: "sgd"
   batch_size_per_device: 64
   warmup_epochs: 5
-  epochs: 30
+  epochs: 15
 
   # Replicator settings
   replicate_every: 1
