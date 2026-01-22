@@ -1,15 +1,31 @@
 import numpy as np
 import torch
-from torchvision import datasets
+from torchvision import datasets, tv_tensors
+from torchvision.transforms import functional as F
 
 
 class SBDatasetMultiLabel(datasets.SBDataset):
     def __init__(self, *args, num_classes=20, **kwargs):
-        super().__init__(*args, mode="segmentation", **kwargs)
+        self.transforms = kwargs.pop("transforms", None)
+        super().__init__(*args, mode="segmentation", transforms=None, **kwargs)
         self.num_classes = num_classes
 
     def __getitem__(self, index):
         img, target = super().__getitem__(index)
+
+        if self.transforms is not None:
+            # Wrap inputs: Image -> tv_tensors.Image, Target -> tv_tensors.Mask
+            img = tv_tensors.Image(F.pil_to_tensor(img))
+            target = tv_tensors.Mask(F.pil_to_tensor(target))
+
+            # Apply transforms
+            img, target = self.transforms(img, target)
+
+        # Convert target to long tensor for bincount
+        if isinstance(target, torch.Tensor):
+            target_t = target.as_subclass(torch.Tensor).long()
+        else:
+            target_t = torch.as_tensor(np.array(target), dtype=torch.long)
 
         # Convert target to tensor
         target_t = torch.as_tensor(np.array(target), dtype=torch.long)

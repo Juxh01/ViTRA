@@ -162,6 +162,7 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
                     T.ToDtype(
                         dtype={
                             tv_tensors.Image: torch.float32,
+                            tv_tensors.Mask: torch.int64,
                             "others": None,
                         },
                         scale=True,
@@ -176,6 +177,7 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
                     T.ToDtype(
                         dtype={
                             tv_tensors.Image: torch.float32,
+                            tv_tensors.Mask: torch.int64,
                             "others": None,
                         },
                         scale=True,
