@@ -31,7 +31,7 @@ class SBDatasetMultiLabel(datasets.SBDataset):
         target_t = torch.as_tensor(np.array(target), dtype=torch.long)
 
         # Count frequency of every class in the image
-        counts = torch.bincount(target_t.flatten(), minlength=256)
+        counts = torch.bincount(target_t.flatten().long(), minlength=256)
 
         # Extract only the classes of interest (1 to 20).
         #    excludes background (0) and ignore (255)
