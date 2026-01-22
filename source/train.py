@@ -237,7 +237,7 @@ def train(
                         align_corners=False,
                     )
 
-            train_metrics.update(preds, targets)
+            train_metrics.update(preds, targets.long())
 
         # Compute epoch time
         epoch_time = time.time() - start_time
@@ -275,7 +275,7 @@ def train(
                             align_corners=False,
                         )
 
-                val_metrics.update(preds, targets)
+                val_metrics.update(preds, targets.long())
 
         # Compute loss and metrics across all processes
         train_loss = train_loss_metric.compute().item()
