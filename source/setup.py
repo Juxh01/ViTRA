@@ -34,7 +34,16 @@ from transformers import (
     ViTForImageClassification,
     ViTModel,
 )
-from transformers.models.dpt.modeling_dpt import DPTNeck, DPTViTLayer
+from transformers.models.dpt.modeling_dpt import (
+    DPTAuxiliaryHead,
+    DPTFeatureFusionLayer,
+    DPTReassembleLayer,
+    DPTSemanticSegmentationHead,
+    DPTViTEmbeddings,
+    DPTViTIntermediate,
+    DPTViTLayer,
+    DPTViTOutput,
+)
 from transformers.models.vit.modeling_vit import ViTLayer
 
 # TODO: Actiavate checkpointing based on config
@@ -533,10 +542,16 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
-            # DPTViTEmbeddings,
-            # DPTFeatureFusionLayer,  # DeToNATION fails here due to weights with no grad
+            DPTViTIntermediate,
+            DPTViTOutput,
+            DPTFeatureFusionLayer,  # DeToNATION fails here due to weights with no grad
+            # DPTReassembleStage,
+            DPTReassembleLayer,
+            DPTSemanticSegmentationHead,
+            DPTAuxiliaryHead,
+            DPTViTEmbeddings,
             # DPTPreActResidualLayer,  # DeToNATION fails here due to weights with no grad
-            DPTNeck,
+            # DPTNeck,
         ),
         seed=seed,
         config=config,

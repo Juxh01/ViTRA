@@ -53,10 +53,10 @@ class BestModelLogger:
         self.device = device
         self.num_images = num_images
         self.task = config["general"]["task"]
-        self.log_images = self.task == "segmentation" and config["general"].get(
+        self.log_images = (self.task == "segmentation") and config["general"].get(
             "log_images_wandb", False
         )
-
+        print(self.log_images, "log images wandb")
         if self.log_images:
             # Initialize the dataset without transforms
             self.raw_dataset = get_dataset(config, split="val", transforms=None)
