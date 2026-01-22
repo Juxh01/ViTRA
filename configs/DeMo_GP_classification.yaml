@@ -57,7 +57,7 @@ hydra:
     timeout_min: 45
   sweeper:
     params:
-      optimizer.compression_topk: 32
+      optimizer.compression_topk: 2,4,8,16,32
     
 
 # hydra:
