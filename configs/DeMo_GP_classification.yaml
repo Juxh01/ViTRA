@@ -12,19 +12,19 @@ general:
   log_offline: true
   task: "classification"
   data_dir: "${hydra:runtime.cwd}/data"
-  dataset_name: "Country211"  #TODO: Change
-  num_classes: 211
+  dataset_name: "SBDataset"
+  num_classes: 20
   log_model_wandb: false
   log_images_wandb: false
 
 
 optimizer:
   # Optimizer settings
-  lr: 5e-5
+  lr: 1e-5
   lr_power: 0.9
   momentum: 0.9
   optimizer_str: "sgd"
-  batch_size_per_device: 512
+  batch_size_per_device: 64
   warmup_epochs: 5
   epochs: 30
 

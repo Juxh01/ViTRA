@@ -46,6 +46,8 @@ from transformers.models.dpt.modeling_dpt import (
 )
 from transformers.models.vit.modeling_vit import ViTLayer
 
+from source.utils.SBDatasetMutlilabel import SBDatasetMultiLabel
+
 # TODO: Actiavate checkpointing based on config
 
 
@@ -104,13 +106,23 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
         elif dataset_name == "SBDataset":
             if split == "valid":
                 split = "val"
-            dataset = datasets.SBDataset(
-                root=data_dir,
-                image_set=split,
-                mode="segmentation",
-                download=False,
-                transforms=transforms,
-            )
+            task = config["general"]["task"]
+            if task == "classification":
+                dataset = SBDatasetMultiLabel(
+                    root=data_dir,
+                    image_set=split,
+                    download=False,
+                    transforms=transforms,
+                    num_classes=config["general"]["num_classes"],  # sollte 20 sein
+                )
+            else:
+                dataset = datasets.SBDataset(
+                    root=data_dir,
+                    image_set=split,
+                    mode="segmentation",
+                    download=False,
+                    transforms=transforms,
+                )
         elif dataset_name == "CIFAR100":
             dataset = datasets.CIFAR100(
                 root=data_dir,
@@ -240,12 +252,18 @@ def get_ViT(config: Dict[str, Any]):
     backbone_name = config["general"].get("backbone_name", None)
     if task == "classification":
         if backbone_name:
+            # Check for multi-label classification
+            dataset_name = config["general"]["dataset_name"]
+            problem_type = (
+                "multi_label_classification" if dataset_name == "SBDataset" else None
+            )
             print(f"Initializing ViT with pretrained backbone: {backbone_name}")
             model = ViTForImageClassification.from_pretrained(
                 backbone_name,
                 num_labels=config["general"]["num_classes"],
                 image_size=224,
                 ignore_mismatched_sizes=True,
+                problem_type=problem_type,
             )
         else:
             raise ValueError("Backbone name must be provided for classification task.")
