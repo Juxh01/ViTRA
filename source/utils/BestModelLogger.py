@@ -56,8 +56,7 @@ class BestModelLogger:
         self.log_images = (self.task == "segmentation") and config["general"].get(
             "log_images_wandb", False
         )
-        print(self.log_images, "log images wandb")
-        if self.log_images:
+        if self.log_images is True:
             # Initialize the dataset without transforms
             self.raw_dataset = get_dataset(config, split="val", transforms=None)
 
@@ -91,7 +90,7 @@ class BestModelLogger:
         if current_metric > self.best_metric:
             self.best_metric = current_metric
 
-            if self.log_images:
+            if self.log_images is True:
                 # --- Inference ---
                 model.eval()
                 with torch.no_grad():

@@ -25,7 +25,7 @@ optimizer:
   lr_power: 0.9
   momentum: 0.9
   optimizer_str: "sgd"
-  batch_size_per_device: 32
+  batch_size_per_device: 48
   warmup_epochs: 5
   epochs: 15
 
@@ -82,19 +82,19 @@ hydra:
   #         default_value: ${optimizer.lr}
   #       optimizer.compression_rate:
   #         type: uniform_float
-  #         lower: 0.01
+  #         lower: 0.01 # from 1 to 5
   #         upper: 1.0
   #         log: false
   #         default_value: ${optimizer.compression_rate}
   #       # TODO: Categorical seems not to work
   #       optimizer.compression_chunk_factor:
   #         type: uniform_int
-  #         lower: 4
-  #         upper: 9
+  #         lower: 5
+  #         upper: 8
   #         log: false
   #         default_value: ${optimizer.compression_chunk_factor}
   #         # type: categorical
-  #         # choices: [16, 32, 64, 128, 256, 512]
+  #         # choices: [32, 64, 128, 256]
   #         # default_value: ${optimizer.compression_chunk}
   #       optimizer.momentum:
   #         type: uniform_float

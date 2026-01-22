@@ -29,8 +29,6 @@ class MinClassAccuracy(MulticlassAccuracy):
 
 
 # TODO: Define metrics based on experiment (no HD95 for SMAC) (really not?)
-
-
 def get_metrics(
     task: str,
     device: str,
@@ -280,7 +278,7 @@ def train(
         scheduler.step()
 
     ### Save final model and best model ###
-    if config.get("general", {}).get("log_model", True):
+    if config.get("general", {}).get("log_model_wandb", True):
         best_model_logger.upload_final_artifact(run=run, rank=rank)
     # Collect the full state dict on CPU
     save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)

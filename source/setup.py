@@ -537,21 +537,18 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         shuffle=False,
     )
 
-    # TODO: Only share DPTViTLayer (compare memory footprint first)
+    # Distribute the model in small parts
     model, optimizer = setup_distributed_training(
         model=model,
         transformer_layer_cls=(
             DPTViTLayer,
             DPTViTIntermediate,
             DPTViTOutput,
-            DPTFeatureFusionLayer,  # DeToNATION fails here due to weights with no grad
-            # DPTReassembleStage,
+            DPTFeatureFusionLayer,
             DPTReassembleLayer,
             DPTSemanticSegmentationHead,
             DPTAuxiliaryHead,
             DPTViTEmbeddings,
-            # DPTPreActResidualLayer,  # DeToNATION fails here due to weights with no grad
-            # DPTNeck,
         ),
         seed=seed,
         config=config,
