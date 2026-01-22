@@ -95,6 +95,7 @@ def steup_lr_scheduler(optim, config: Dict[str, Any]):
 def get_dataset(config: Dict[str, Any], split: str, transforms=None):
     data_dir = config["general"]["data_dir"]
     dataset_name = config["general"]["dataset_name"]
+    task = config["general"]["task"]
     try:
         if dataset_name == "Country211":
             dataset = datasets.Country211(
@@ -106,7 +107,7 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
         elif dataset_name == "SBDataset":
             if split == "valid":
                 split = "val"
-            task = config["general"]["task"]
+
             if task == "classification":
                 dataset = SBDatasetMultiLabel(
                     root=data_dir,
@@ -144,7 +145,8 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
             raise ValueError(f"Unknown dataset: {dataset_name}")
     except Exception as e:
         raise RuntimeError(f"Datasets must be downloaded before setup. Error: {e}")
-    dataset = datasets.wrap_dataset_for_transforms_v2(dataset)
+    if task == "segmentation":
+        dataset = datasets.wrap_dataset_for_transforms_v2(dataset)
     return dataset
 
 
