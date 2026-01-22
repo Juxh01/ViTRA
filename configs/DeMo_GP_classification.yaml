@@ -11,7 +11,7 @@ general:
   experiment_name: ${name}
   log_offline: true
   task: "classification"
-  data_dir: "${hydra:runtime.cwd}/data"
+  data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
   dataset_name: "SBDataset"
   num_classes: 20
   log_model_wandb: false
