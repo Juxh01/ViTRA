@@ -27,6 +27,7 @@ from torch.optim.lr_scheduler import LinearLR, PolynomialLR
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torchvision import datasets, tv_tensors
+from torchvision.transforms import InterpolationMode
 from torchvision.transforms import v2 as T
 from transformers import (
     DPTConfig,
@@ -141,17 +142,31 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
                 download=False,
                 transforms=transforms,
             )
+        elif dataset_name == "FGVCAircraft":
+            if split == "train":
+                split = "trainval"
+            else:
+                split = "test"
+            dataset = datasets.FGVCAircraft(
+                root=data_dir,
+                split=split,
+                download=False,
+                transform=transforms,
+                annotation_level="variant",
+            )
         else:
             raise ValueError(f"Unknown dataset: {dataset_name}")
     except Exception as e:
         raise RuntimeError(f"Datasets must be downloaded before setup. Error: {e}")
-    if task == "segmentation":
+    # Manual wrapping for SBDataset with Multi-Label Classification
+    if (task == "segmentation") or not (dataset_name == "SBDataset"):
         dataset = datasets.wrap_dataset_for_transforms_v2(dataset)
     return dataset
 
 
 def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True):
     task = config["general"]["task"]
+    dataset = config["general"]["dataset_name"]
     # if task == "classification":
     #     if split == "train":
     #         transforms = T.Compose(
@@ -236,53 +251,96 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
     #         )
     # else:
     #     raise ValueError(f"Unsupported task: {task}")
-
-    if split == "train":
-        transforms = T.Compose(
-            [
-                T.RandomShortestSize(
-                    min_size=int(224 * 0.5),
-                    max_size=int(224 * 2.0),  # Change 384
-                ),
-                T.RandomCrop(
-                    size=(224, 224),  # Change 384
-                    pad_if_needed=True,
-                    fill=0,
-                    padding_mode="constant",
-                ),
-                T.RandomRotation(degrees=(-15, 15)),
-                T.RandomHorizontalFlip(p=0.5),
-                T.RandomGrayscale(p=0.05),
-                T.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1),
-                # T.RandomApply(
-                #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
-                # ),
-                T.ToImage(),
-                T.ToDtype(
-                    dtype={
-                        tv_tensors.Image: torch.float32,
-                        tv_tensors.Mask: torch.int64,
-                        "others": None,
-                    },
-                    scale=True,
-                ),
-            ]
-        )
+    if dataset == "FGVCAircraft":
+        if split == "train":
+            transforms = T.Compose(
+                [
+                    # Use moderate crop to keep aircraft details
+                    T.RandomResizedCrop(
+                        size=(224, 224),
+                        scale=(0.5, 1.0),
+                        ratio=(0.75, 1.33),
+                        interpolation=InterpolationMode.BICUBIC,
+                    ),
+                    T.RandomHorizontalFlip(p=0.5),
+                    # Use moderate RandAugment for aircraft details, but small dataset
+                    T.RandAugment(
+                        num_ops=2, magnitude=9, interpolation=InterpolationMode.BICUBIC
+                    ),
+                    T.ToImage(),
+                    T.ToDtype(
+                        dtype={
+                            tv_tensors.Image: torch.float32,
+                            "others": None,
+                        },
+                        scale=True,
+                    ),
+                ]
+            )
+        else:
+            transforms = T.Compose(
+                [
+                    T.Resize(int(224 * 1.14), interpolation=InterpolationMode.BICUBIC),
+                    T.CenterCrop((224, 224)),
+                    T.ToImage(),
+                    T.ToDtype(
+                        dtype={
+                            tv_tensors.Image: torch.float32,
+                            "others": None,
+                        },
+                        scale=True,
+                    ),
+                ]
+            )
     else:
-        transforms = T.Compose(
-            [
-                T.Resize(size=(224, 224)),  # Change 384
-                T.ToImage(),
-                T.ToDtype(
-                    dtype={
-                        tv_tensors.Image: torch.float32,
-                        tv_tensors.Mask: torch.int64,
-                        "others": None,
-                    },
-                    scale=True,
-                ),
-            ],
-        )
+        if split == "train":
+            transforms = T.Compose(
+                [
+                    T.RandomShortestSize(
+                        min_size=int(224 * 0.5),
+                        max_size=int(224 * 2.0),  # Change 384
+                    ),
+                    T.RandomCrop(
+                        size=(224, 224),  # Change 384
+                        pad_if_needed=True,
+                        fill=0,
+                        padding_mode="constant",
+                    ),
+                    T.RandomRotation(degrees=(-15, 15)),
+                    T.RandomHorizontalFlip(p=0.5),
+                    T.RandomGrayscale(p=0.05),
+                    T.ColorJitter(
+                        brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1
+                    ),
+                    # T.RandomApply(
+                    #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
+                    # ),
+                    T.ToImage(),
+                    T.ToDtype(
+                        dtype={
+                            tv_tensors.Image: torch.float32,
+                            tv_tensors.Mask: torch.int64,
+                            "others": None,
+                        },
+                        scale=True,
+                    ),
+                ]
+            )
+        else:
+            transforms = T.Compose(
+                [
+                    T.Resize(size=(224, 224)),  # Change 384
+                    T.ToImage(),
+                    T.ToDtype(
+                        dtype={
+                            tv_tensors.Image: torch.float32,
+                            tv_tensors.Mask: torch.int64,
+                            "others": None,
+                        },
+                        scale=True,
+                    ),
+                ],
+            )
     if add_normalize:
         if task == "classification":
             normalize = T.Normalize(

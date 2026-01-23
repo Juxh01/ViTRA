@@ -11,9 +11,9 @@ general:
   experiment_name: ${name}
   log_offline: true
   task: "classification"
-  data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
-  dataset_name: "SBDataset"
-  num_classes: 20
+  data_dir: "${hydra:runtime.cwd}/data/"
+  dataset_name: "FGVCAircraft"
+  num_classes: 100
   log_model_wandb: false
   log_images_wandb: false
 
@@ -26,7 +26,7 @@ optimizer:
   optimizer_str: "sgd"
   batch_size_per_device: 64
   warmup_epochs: 5
-  epochs: 15
+  epochs: 30
 
   # Replicator settings
   replicate_every: 1
@@ -57,7 +57,8 @@ hydra:
     timeout_min: 45
   sweeper:
     params:
-      optimizer.compression_topk: 2,4,8,16,32
+#      optimizer.compression_topk: 2,4,8,16,32
+      optimizer.compression_topk: 2
     
 
 # hydra:
