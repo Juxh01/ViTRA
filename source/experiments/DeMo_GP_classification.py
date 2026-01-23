@@ -10,25 +10,23 @@ from torch import distributed as dist
 
 from source.setup import setup_classification
 from source.train import train
+from source.utils.SweepUtils import set_sweep_config
 
 
 @hydra.main(
     config_path="../../configs",
-    config_name="DeMo_GP_classification",
+    # config_name="DeMo_GP_classification",
+    config_name="Classification_SBDataset",
     version_base="1.1",
 )
 def main(cfg: DictConfig) -> dict:
     warnings.filterwarnings("ignore", message=".*Using a non-tuple sequence*")
 
-    # Calculates topk based on rate * chunk, guaranteed >= 1
-    # cfg.optimizer.compression_topk = max(
-    #     1, int(cfg.optimizer.compression_chunk * cfg.optimizer.compression_rate)
-    # )
-
-    # cfg.optimizer.compression_chunk = 2 ** int(cfg.optimizer.compression_chunk_factor)
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
     config_dict = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
+
+    # Set sweep specific configuration
+    config_dict = set_sweep_config(config_dict)
 
     # Setup
     model, train_loader, val_loader, train_sampler, optimizer, scheduler = (
