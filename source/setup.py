@@ -159,7 +159,7 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
     except Exception as e:
         raise RuntimeError(f"Datasets must be downloaded before setup. Error: {e}")
     # Manual wrapping for SBDataset with Multi-Label Classification
-    if (task == "segmentation") or not (dataset_name == "SBDataset"):
+    if task == "segmentation":
         dataset = datasets.wrap_dataset_for_transforms_v2(dataset)
     return dataset
 
@@ -267,12 +267,9 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
                     T.RandAugment(
                         num_ops=2, magnitude=9, interpolation=InterpolationMode.BICUBIC
                     ),
-                    T.ToImage(),
+                    T.ToTensor(),
                     T.ToDtype(
-                        dtype={
-                            tv_tensors.Image: torch.float32,
-                            "others": None,
-                        },
+                        dtype=torch.float32,
                         scale=True,
                     ),
                 ]
@@ -282,12 +279,9 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
                 [
                     T.Resize(int(224 * 1.14), interpolation=InterpolationMode.BICUBIC),
                     T.CenterCrop((224, 224)),
-                    T.ToImage(),
+                    T.ToTensor(),
                     T.ToDtype(
-                        dtype={
-                            tv_tensors.Image: torch.float32,
-                            "others": None,
-                        },
+                        dtype=torch.float32,
                         scale=True,
                     ),
                 ]
