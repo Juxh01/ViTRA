@@ -352,7 +352,7 @@ def get_ViT(config: Dict[str, Any]):
             # neck_hidden_sizes=[96, 192, 384, 768],
             neck_hidden_sizes=[48, 96, 192, 384],
             # fusion_hidden_size=256,
-            fusion_hidden_size=64,
+            fusion_hidden_size=128,
             head_in_index=-1,
             use_batch_norm_in_fusion_residual=False,
             use_bias_in_fusion_residual=True,
