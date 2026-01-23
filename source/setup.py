@@ -551,6 +551,7 @@ def setup_distributed_training(
         skip_every=optim_config["skip_every"],
         sharding_group_size=optim_config["shards"],
         momentum=optim_config["momentum"],
+        detonation_sign=optim_config.get("sign", True),
     )
     optim = optimizer._optimizer if hasattr(optimizer, "_optimizer") else optimizer
     for param_group in optim.param_groups:

@@ -35,6 +35,7 @@ optimizer:
   skip_every: null
   shards: 1
   repl: "deto-demo"
+  sign: true
   # Demo
   compression_topk: 4
   compression_chunk: 64

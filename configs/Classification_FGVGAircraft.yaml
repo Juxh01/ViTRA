@@ -33,6 +33,7 @@ optimizer:
   skip_every: null
   shards: 1
   repl: "deto-demo"
+  sign: true
   # Replicator Compression settings
   compression_topk: 32
   compression_chunk: 64
@@ -57,9 +58,7 @@ hydra:
     timeout_min: 45
   sweeper:
     params:
-      # optimizer.compression_factor: 2,4,8,16,32
-      # optimizer.repl: deto-demo, deto-random, deto-stride, deto-full
-      # general.seed: 10,20,30,40,50,60,70,80,90,100
-        optimizer.compression_factor: 8
-        optimizer.repl: deto-demo, deto-random, deto-stride, deto-full
+      optimizer.compression_factor: 1,2,4,8,16,32
+      optimizer.repl: deto-demo, deto-random, deto-full
+      general.seed: 10,20,30,40,50,60,70,80,90,100
     
