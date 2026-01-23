@@ -90,3 +90,15 @@ sweep-segmentation:
 	@echo "Starting SMAC Sweep with SLURM..."
 	$(PYTHON) source/experiments/DeMo_GP_segmentation.py \
 		-m
+
+sweep-ablation-fgvc:
+	@echo "Starte Ablation Sweep für FGVC Aircraft..."
+	$(PYTHON) source/experiments/Ablation_Sweep.py --config-name=Classification_FGVGAircraft -m
+
+sweep-ablation-sb-cls:
+	@echo "Starte Ablation Sweep für SBDataset Classification..."
+	$(PYTHON) source/experiments/Ablation_Sweep.py --config-name=Classification_SBDataset -m
+
+sweep-ablation-sb-seg:
+	@echo "Starte Ablation Sweep für SBDataset Segmentation..."
+	$(PYTHON) source/experiments/Ablation_Sweep.py --config-name=Segmentation_SBDataset -m

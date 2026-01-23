@@ -8,14 +8,13 @@ import wandb
 from omegaconf import DictConfig, OmegaConf
 from torch import distributed as dist
 
-from source.setup import setup_classification
+from source.setup import setup_classification, setup_segmentation
 from source.train import train
 from source.utils.SweepUtils import set_sweep_config
 
 
 @hydra.main(
     config_path="../../configs",
-    # config_name="DeMo_GP_classification",
     config_name="Classification_SBDataset",
     version_base="1.1",
 )
@@ -29,9 +28,14 @@ def main(cfg: DictConfig) -> dict:
     config_dict = set_sweep_config(config_dict)
 
     # Setup
-    model, train_loader, val_loader, train_sampler, optimizer, scheduler = (
-        setup_classification(device=device, config=config_dict)
-    )
+    if cfg.general.task == "classification":
+        model, train_loader, val_loader, train_sampler, optimizer, scheduler = (
+            setup_classification(device=device, config=config_dict)
+        )
+    else:
+        model, train_loader, val_loader, train_sampler, optimizer, scheduler = (
+            setup_segmentation(device=device, config=config_dict)
+        )
 
     rank = int(os.environ["RANK"])
     run = None
@@ -46,12 +50,11 @@ def main(cfg: DictConfig) -> dict:
             project=cfg.general.wandb_project,
             config=config_dict,
             name=cfg.general.experiment_name,
-            reinit=True,  # For sweeps
-            group="DeMo_GP_classification",
+            group=f"Sweep-{cfg.general.dataset_name}-{cfg.general.task}",
         )
 
     # Train with configuration
-    acc1, avg_epoch_time, avg_aulc = train(
+    best_metric, avg_epoch_time, avg_aulc = train(
         device=device,
         config=config_dict,
         model=model,
@@ -66,7 +69,7 @@ def main(cfg: DictConfig) -> dict:
 
     # Result Dictionary
     result_dict = {
-        "classification_error": 1.0 - acc1,
+        "error": 1.0 - best_metric,
         "aulc_error": 1.0 - avg_aulc,
         "avg_epoch_time": avg_epoch_time,
     }
