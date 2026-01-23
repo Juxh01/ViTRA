@@ -2,25 +2,26 @@ defaults:
   - override hydra/launcher: submitit_slurm
 
 name: "${general.task}-${general.dataset_name}-${general.backbone_name}"
-description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
+description: "Semantic Segmentation on ${general.dataset_name} using ${general.backbone_name} model"
+seed: 10
 general:
-  seed: 10
+  seed: ${seed}
   image_size: 224
   backbone_name: "google/vit-base-patch16-${general.image_size}" 
   wandb_project: "ViTRA"
   experiment_name: ${name}
   log_offline: true
-  task: "classification"
+  task: "segmentation"
   data_dir: "${hydra:runtime.cwd}/data/VOCSB/"
   dataset_name: "SBDataset"
-  num_classes: 20
+  num_classes: 21
   log_model_wandb: false
   log_images_wandb: false
-
 
 optimizer:
   # Optimizer settings
   lr: 1e-5
+  lr_head: 1e-4
   lr_power: 0.9
   momentum: 0.9
   optimizer_str: "sgd"
@@ -45,8 +46,9 @@ distributed:
   nnodes: 2
   node_rank: 0
   master_addr: 10.42.22.19
-  master_port: 29501
+  master_port: 27501
   standalone: false # Setze auf false, wenn nnodes > 1
+
 
 hydra:
   launcher:
@@ -56,7 +58,6 @@ hydra:
     nodes: ${distributed.nnodes}
     timeout_min: 45
   sweeper:
-    params:
-      optimizer.compression_factor: 8
-      optimizer.repl: deto-demo, deto-random, deto-stride, deto-full
-    
+      params:
+        optimizer.compression_factor: 8
+        optimizer.repl: deto-demo, deto-random, deto-stride, deto-full
