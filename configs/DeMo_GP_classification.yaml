@@ -6,7 +6,8 @@ name: "${general.dataset_name}-${general.backbone_name}-GP-DeMo"
 description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
 general:
   seed: 10
-  backbone_name: "google/vit-base-patch16-224" 
+  image_size: 384
+  backbone_name: "google/vit-base-patch16-${general.image_size}" 
   wandb_project: "ViTRA"
   experiment_name: ${name}
   log_offline: true
@@ -26,7 +27,7 @@ optimizer:
   optimizer_str: "sgd"
   batch_size_per_device: 64
   warmup_epochs: 5
-  epochs: 30
+  epochs: 15
 
   # Replicator settings
   replicate_every: 1

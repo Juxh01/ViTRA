@@ -167,6 +167,7 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
 def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True):
     task = config["general"]["task"]
     dataset = config["general"]["dataset_name"]
+    image_size = config["general"]["image_size"]
     # if task == "classification":
     #     if split == "train":
     #         transforms = T.Compose(
@@ -257,7 +258,7 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
                 [
                     # Use moderate crop to keep aircraft details
                     T.RandomResizedCrop(
-                        size=(224, 224),
+                        size=(image_size, image_size),
                         scale=(0.5, 1.0),
                         ratio=(0.75, 1.33),
                         interpolation=InterpolationMode.BICUBIC,
@@ -277,8 +278,10 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
         else:
             transforms = T.Compose(
                 [
-                    T.Resize(int(224 * 1.14), interpolation=InterpolationMode.BICUBIC),
-                    T.CenterCrop((224, 224)),
+                    T.Resize(
+                        int(image_size * 1.14), interpolation=InterpolationMode.BICUBIC
+                    ),
+                    T.CenterCrop((image_size, image_size)),
                     T.ToTensor(),
                     T.ToDtype(
                         dtype=torch.float32,
@@ -291,11 +294,11 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
             transforms = T.Compose(
                 [
                     T.RandomShortestSize(
-                        min_size=int(224 * 0.5),
-                        max_size=int(224 * 2.0),  # Change 384
+                        min_size=int(image_size * 0.5),
+                        max_size=int(image_size * 2.0),  # Change 384
                     ),
                     T.RandomCrop(
-                        size=(224, 224),  # Change 384
+                        size=(image_size, image_size),  # Change 384
                         pad_if_needed=True,
                         fill=0,
                         padding_mode="constant",
@@ -323,7 +326,7 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
         else:
             transforms = T.Compose(
                 [
-                    T.Resize(size=(224, 224)),  # Change 384
+                    T.Resize(size=(image_size, image_size)),  # Change 384
                     T.ToImage(),
                     T.ToDtype(
                         dtype={
@@ -364,7 +367,7 @@ def get_ViT(config: Dict[str, Any]):
             model = ViTForImageClassification.from_pretrained(
                 backbone_name,
                 num_labels=config["general"]["num_classes"],
-                image_size=224,
+                image_size=config["general"]["image_size"],
                 ignore_mismatched_sizes=True,
                 problem_type=problem_type,
             )
@@ -390,7 +393,7 @@ def get_ViT(config: Dict[str, Any]):
             attention_probs_dropout_prob=0.0,
             initializer_range=0.02,
             layer_norm_eps=1e-12,
-            image_size=224,  # Change 384
+            image_size=config["general"]["image_size"],
             patch_size=16,
             num_channels=3,
             qkv_bias=True,

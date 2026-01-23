@@ -6,7 +6,8 @@ name: "${general.dataset_name}-${general.backbone_name}-GP-DeMo"
 description: "Classification on ${general.dataset_name} using ${general.backbone_name} model"
 general:
   seed: 10
-  backbone_name: "google/vit-base-patch16-224" 
+  image_size: 224
+  backbone_name: "google/vit-base-patch16-${general.image_size}" 
   wandb_project: "ViTRA"
   experiment_name: ${name}
   log_offline: true
