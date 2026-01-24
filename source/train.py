@@ -41,7 +41,6 @@ class MinClassJaccard(MultilabelJaccardIndex):
         return torch.min(super().compute())
 
 
-# TODO: Define metrics based on experiment (no HD95 for SMAC) (really not?)
 def get_metrics(
     task: str,
     device: str,
@@ -228,7 +227,7 @@ def train(
             train_loss_metric.update(value=loss.item(), weight=inputs.size(0))
             preds = outputs.logits
             if task == "segmentation":
-                # Für Seg müssen wir oft interpolieren, da Output kleiner als Input sein kann
+                # Interpolate predictions to match target size if needed
                 if preds.shape[-2:] != targets.shape[-2:]:
                     preds = torch.nn.functional.interpolate(
                         preds,
@@ -267,6 +266,7 @@ def train(
 
                 preds = outputs.logits
                 if task == "segmentation":
+                    # Interpolate predictions to match target size if needed
                     if preds.shape[-2:] != targets.shape[-2:]:
                         preds = torch.nn.functional.interpolate(
                             preds,
