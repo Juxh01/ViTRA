@@ -1,3 +1,10 @@
+# This file was not used in the final report but is kept for completeness.
+# It appears, that all models collapsed during adversarial training, so the
+# evaluation was not meaningful.
+# Adversarial attacks has to be integrated into the training, which was out of scope
+# for this project.
+
+
 import os
 
 import torch
@@ -81,9 +88,7 @@ def evaluate_segmentation(model, device, config, run):
         val_dataset,
         batch_size=config["adversarial"]["batch_size_per_device"],
         sampler=val_sampler,
-        num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 4)
-        ),  # TODO: dynamic value?
+        num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", 4)),
         shuffle=False,
     )
 

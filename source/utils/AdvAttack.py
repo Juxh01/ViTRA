@@ -1,4 +1,5 @@
 # Obtained from https://github.com/nmndeep/Robust-Segmentation/blob/main/semseg/attacker.py
+# This file was slightly modified for our use case.
 
 import math
 from functools import partial

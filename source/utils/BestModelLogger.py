@@ -10,7 +10,6 @@ from torch.distributed.checkpoint.state_dict import StateDictOptions, get_state_
 from source.setup import get_dataset
 
 # PASCAL VOC class labels from https://www.robots.ox.ac.uk/~vgg/projects/pascal/VOC/voc2012/segexamples/index.html
-# TODO: Do they match SBDataset labels?
 VOC_CLASS_LABELS = {
     0: "background",
     1: "aeroplane",
