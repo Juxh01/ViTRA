@@ -49,8 +49,6 @@ from transformers.models.vit.modeling_vit import ViTLayer
 
 from source.utils.SBDatasetMutlilabel import SBDatasetMultiLabel
 
-# TODO: Actiavate checkpointing based on config
-
 
 def set_seed(seed: int):
     random.seed(seed)
@@ -63,12 +61,7 @@ def set_seed(seed: int):
 
 
 def steup_lr_scheduler(optim, config: Dict[str, Any]):
-    # TODO: Move to step based scheduler?
     optim_config = config["optimizer"]
-    # task = config["general"]["task"]
-    # if task == "classification":
-    #     scheduler = StepLR(optim, step_size=1, gamma=optim_config["lr_gamma"])
-    # elif task == "segmentation":
     total_epochs = optim_config["epochs"]
     warmup_epochs = optim_config["warmup_epochs"]
     main_scheduler = PolynomialLR(
@@ -88,8 +81,6 @@ def steup_lr_scheduler(optim, config: Dict[str, Any]):
         schedulers=[warmup_scheduler, main_scheduler],
         milestones=[warmup_epochs],
     )
-    # else:
-    #     raise ValueError(f"Unknown task: {task}")
     return scheduler
 
 
@@ -115,7 +106,7 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
                     image_set=split,
                     download=False,
                     transforms=transforms,
-                    num_classes=config["general"]["num_classes"],  # sollte 20 sein
+                    num_classes=config["general"]["num_classes"],
                 )
             else:
                 dataset = datasets.SBDataset(
@@ -158,7 +149,6 @@ def get_dataset(config: Dict[str, Any], split: str, transforms=None):
             raise ValueError(f"Unknown dataset: {dataset_name}")
     except Exception as e:
         raise RuntimeError(f"Datasets must be downloaded before setup. Error: {e}")
-    # Manual wrapping for SBDataset with Multi-Label Classification
     if task == "segmentation":
         dataset = datasets.wrap_dataset_for_transforms_v2(dataset)
     return dataset
@@ -168,90 +158,6 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
     task = config["general"]["task"]
     dataset = config["general"]["dataset_name"]
     image_size = config["general"]["image_size"]
-    # if task == "classification":
-    #     if split == "train":
-    #         transforms = T.Compose(
-    #             [
-    #                 T.RandomResizedCrop(size=(224, 224), scale=(0.5, 2.0)),
-    #                 T.RandomHorizontalFlip(),
-    #                 T.ToImage(),
-    #                 T.ToDtype(
-    #                     dtype={
-    #                         tv_tensors.Image: torch.float32,
-    #                         tv_tensors.Mask: torch.int64,
-    #                         "others": None,
-    #                     },
-    #                     scale=True,
-    #                 ),
-    #             ]
-    #         )
-    #     else:
-    #         transforms = T.Compose(
-    #             [
-    #                 T.Resize(size=(224, 224)),
-    #                 T.ToImage(),
-    #                 T.ToDtype(
-    #                     dtype={
-    #                         tv_tensors.Image: torch.float32,
-    #                         tv_tensors.Mask: torch.int64,
-    #                         "others": None,
-    #                     },
-    #                     scale=True,
-    #                 ),
-    #             ]
-    #         )
-
-    # elif task == "segmentation":
-    #     if split == "train":
-    #         transforms = T.Compose(
-    #             [
-    #                 T.RandomShortestSize(
-    #                     min_size=int(224 * 0.5),
-    #                     max_size=int(224 * 2.0),  # Change 384
-    #                 ),
-    #                 T.RandomCrop(
-    #                     size=(224, 224),  # Change 384
-    #                     pad_if_needed=True,
-    #                     fill=0,
-    #                     padding_mode="constant",
-    #                 ),
-    #                 T.RandomRotation(degrees=(-15, 15)),
-    #                 T.RandomHorizontalFlip(p=0.5),
-    #                 T.RandomGrayscale(p=0.05),
-    #                 T.ColorJitter(
-    #                     brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1
-    #                 ),
-    #                 # T.RandomApply(
-    #                 #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
-    #                 # ),
-    #                 T.ToImage(),
-    #                 T.ToDtype(
-    #                     dtype={
-    #                         tv_tensors.Image: torch.float32,
-    #                         tv_tensors.Mask: torch.int64,
-    #                         "others": None,
-    #                     },
-    #                     scale=True,
-    #                 ),
-    #             ]
-    #         )
-    #     else:
-    #         transforms = T.Compose(
-    #             [
-    #                 T.Resize(size=(224, 224)),  # Change 384
-    #                 T.ToImage(),
-    #                 T.ToDtype(
-    #                     dtype={
-    #                         tv_tensors.Image: torch.float32,
-    #                         tv_tensors.Mask: torch.int64,
-    #                         "others": None,
-    #                     },
-    #                     scale=True,
-    #                 ),
-    #             ],
-    #         )
-    # else:
-    #     raise ValueError(f"Unsupported task: {task}")
     if dataset == "FGVCAircraft":
         if split == "train":
             transforms = T.Compose(
@@ -295,10 +201,10 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
                 [
                     T.RandomShortestSize(
                         min_size=int(image_size * 0.5),
-                        max_size=int(image_size * 2.0),  # Change 384
+                        max_size=int(image_size * 2.0),
                     ),
                     T.RandomCrop(
-                        size=(image_size, image_size),  # Change 384
+                        size=(image_size, image_size),
                         pad_if_needed=True,
                         fill=0,
                         padding_mode="constant",
@@ -309,9 +215,6 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
                     T.ColorJitter(
                         brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1
                     ),
-                    # T.RandomApply(
-                    #     [T.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 1.0))], p=0.2
-                    # ),
                     T.ToImage(),
                     T.ToDtype(
                         dtype={
@@ -326,7 +229,7 @@ def get_transform(config: Dict[str, Any], split: str, add_normalize: bool = True
         else:
             transforms = T.Compose(
                 [
-                    T.Resize(size=(image_size, image_size)),  # Change 384
+                    T.Resize(size=(image_size, image_size)),
                     T.ToImage(),
                     T.ToDtype(
                         dtype={
@@ -381,7 +284,6 @@ def get_ViT(config: Dict[str, Any]):
         else:
             raise ValueError("Backbone name must be provided for segmentation task.")
 
-        # TODO: Reduce complexity of CNN head -> But check performance first
         dpt_base_config = DPTConfig(
             # --- ViT-Base Configuration (mostly default) ---
             hidden_size=768,
@@ -401,12 +303,12 @@ def get_ViT(config: Dict[str, Any]):
             is_hybrid=False,  # ViT-Base Backbone
             backbone_out_indices=[2, 5, 8, 11],  # Like in DPT-Paper
             readout_type="project",  # Default in DPT-Paper
-            num_labels=config["general"]["num_classes"],  # VOC has 21 classes
+            num_labels=config["general"]["num_classes"],
             # --- Decoder Configuration (default configuration) ---
             reassemble_factors=[4, 2, 1, 0.5],
-            # neck_hidden_sizes=[96, 192, 384, 768],
+            # neck_hidden_sizes=[96, 192, 384, 768], # Original DPT
             neck_hidden_sizes=[48, 96, 192, 384],
-            # fusion_hidden_size=256,
+            # fusion_hidden_size=256, # Original DPT
             fusion_hidden_size=128,
             head_in_index=-1,
             use_batch_norm_in_fusion_residual=False,
@@ -576,25 +478,6 @@ def setup_classification(device: str, config: Dict[str, Any]):
     seed = config["general"]["seed"]
     set_seed(seed)
 
-    # vit_base_config = ViTConfig(
-    #     hidden_size=768,
-    #     num_hidden_layers=12,
-    #     num_attention_heads=12,
-    #     intermediate_size=3072,
-    #     hidden_act="gelu",
-    #     hidden_dropout_prob=0.0,
-    #     attention_probs_dropout_prob=0.0,
-    #     initializer_range=0.02,
-    #     layer_norm_eps=1e-12,
-    #     image_size=224,
-    #     patch_size=16,
-    #     num_channels=3,
-    #     qkv_bias=True,
-    #     encoder_stride=16,
-    #     pooler_output_size=None,  # Defaults to hidden_size
-    #     pooler_act="tanh",
-    #     num_labels=211,
-    # )
     model = get_ViT(config)
     model.to(device)
 
@@ -612,18 +495,14 @@ def setup_classification(device: str, config: Dict[str, Any]):
         train_dataset,
         batch_size=batch_size,
         sampler=train_sampler,
-        num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 8)
-        ),  # TODO: dynamic value?
+        num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)),
         shuffle=False,  # Shuffle is done by sampler
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         sampler=val_sampler,
-        num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 8)
-        ),  # TODO: dynamic value?
+        num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)),
         shuffle=False,
     )
 
@@ -660,18 +539,14 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
         train_dataset,
         batch_size=batch_size,
         sampler=train_sampler,
-        num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 8)
-        ),  # TODO: dynamic value?
+        num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)),
         shuffle=False,  # Shuffle is done by sampler
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         sampler=val_sampler,
-        num_workers=int(
-            os.environ.get("SLURM_CPUS_PER_TASK", 8)
-        ),  # TODO: dynamic value?
+        num_workers=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)),
         shuffle=False,
     )
 
@@ -722,7 +597,7 @@ def setup_segmentation(device: str, config: Dict[str, Any]):
                 {"params": backbone_params, "lr": base_lr, "name": "backbone"}
             )
 
-        # Gruppe 2: Random Init Layers (aggressive LR)
+        # Random Init Layers (aggressive LR)
         if new_params:
             optimizer.add_param_group(
                 {
