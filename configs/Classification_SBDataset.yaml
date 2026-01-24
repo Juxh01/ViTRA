@@ -47,8 +47,7 @@ distributed:
   node_rank: 0
   master_addr: 10.42.22.19
   master_port: 29501
-  standalone: false # Setze auf false, wenn nnodes > 1
-
+  standalone: false 
 hydra:
   launcher:
     partition: CLOUD
@@ -58,10 +57,7 @@ hydra:
     timeout_min: 45
   sweeper:
     params:
-        # optimizer.compression_factor: 1,2,4,8,16,32
-        optimizer.compression_factor: 1
-        # optimizer.repl: deto-demo, deto-random, deto-full
-        optimizer.repl: deto-full
-        # general.seed: 10,20,30,40,50,60,70,80,90,100
-        general.seed: 10
+        optimizer.compression_factor: 1,2,4,8,16,32
+        optimizer.repl: deto-demo, deto-random, deto-full
+        general.seed: 10,20,30,40,50,60,70,80,90,100
     

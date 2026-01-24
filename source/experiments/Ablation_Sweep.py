@@ -50,7 +50,7 @@ def main(cfg: DictConfig) -> dict:
             project=cfg.general.wandb_project,
             config=config_dict,
             name=cfg.general.experiment_name,
-            group=f"Sweep-{cfg.general.dataset_name}-{cfg.general.task}",
+            group=f"Sweep-{cfg.general.dataset_name}-{cfg.general.task}-final",
         )
 
     # Train with configuration
