@@ -28,7 +28,6 @@ def main(cfg: DictConfig) -> None:
         # Initialize Weights & Biases logging
         run = wandb.init(
             project=cfg.general.wandb_project,
-            entity="TeamJPL",
             config=config_dict,
             name=cfg.general.experiment_name,
         )
