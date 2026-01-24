@@ -1,3 +1,6 @@
+# As the SBDataset from torchvision only provides segmentation masks,
+# we extend it to provide multi-label classification targets as well.
+
 import numpy as np
 import torch
 from torchvision import datasets, tv_tensors

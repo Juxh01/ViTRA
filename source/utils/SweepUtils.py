@@ -14,10 +14,6 @@ def set_sweep_config(config):
         config["optimizer"]["compression_topk"] = config["optimizer"][
             "compression_chunk"
         ] // (compression_factor * 2)
-        if compression_factor == 1:
-            raise ValueError(
-                "Deto-Demo with compression factor 1 is not valid for sweep."
-            )
     elif replication_strategy == "deto-random":
         config["optimizer"]["compression_rate"] = 1.0 / compression_factor
         if compression_factor == 1:

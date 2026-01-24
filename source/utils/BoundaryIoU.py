@@ -1,5 +1,4 @@
-# Boundary IoU Metric is not implemented in TorchMetrics, but Kornia provides standardized morphological operations
-
+# Boundary IoU Metric is not implemented in TorchMetrics, so we implement it here.
 import math
 
 import torch
