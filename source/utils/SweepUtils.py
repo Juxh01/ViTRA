@@ -28,10 +28,6 @@ def set_sweep_config(config):
             )
     elif replication_strategy == "deto-full":
         config["optimizer"]["replicate_every"] = compression_factor
-        # Use AdamW for compression factor 1 (no compression) (Baseline!)
-        if compression_factor == 1:
-            config["optimizer"]["optimizer_str"] = "adamw"
-            config["optimizer"]["sign"] = False
     else:
         raise ValueError(
             f"Unknown replication strategy {replication_strategy} for sweep."
