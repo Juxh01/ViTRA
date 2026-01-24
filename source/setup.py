@@ -539,6 +539,20 @@ def setup_distributed_training(
         replicator = NoReplicator()
         raise NotImplementedError("NoReplicator is not wanted yet.")
     opt_enum = Optimizers(optim_config["optimizer_str"].lower())
+
+    # Detonation kwargs
+    detonation_kwargs = {
+        "replicate_every": optim_config["replicate_every"],
+        "skip_every": optim_config["skip_every"],
+        "sharding_group_size": optim_config["shards"],
+        "detonation_sign": optim_config.get("sign", True),
+    }
+
+    # Add momentum if SGD
+    if opt_enum == Optimizers.SGD:
+        detonation_kwargs["momentum"] = optim_config["momentum"]
+        print(f"Using Momentum: {optim_config['momentum']} for SGD Optimizer.")
+
     model, optimizer = prepare_detonation(
         model,
         opt_enum,
@@ -547,11 +561,7 @@ def setup_distributed_training(
             "auto_wrap_policy": auto_wrap_policy,
             "mixed_precision": mixed_precision,
         },
-        replicate_every=optim_config["replicate_every"],
-        skip_every=optim_config["skip_every"],
-        sharding_group_size=optim_config["shards"],
-        momentum=optim_config["momentum"],
-        detonation_sign=optim_config.get("sign", True),
+        **detonation_kwargs,
     )
     optim = optimizer._optimizer if hasattr(optimizer, "_optimizer") else optimizer
     for param_group in optim.param_groups:
