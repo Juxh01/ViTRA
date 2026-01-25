@@ -32,7 +32,8 @@ optimizer:
   # Replicator settings
   replicate_every: 1
   skip_every: null
-  shards: 1
+  # shards: 1
+  shards: 2
   repl: "deto-demo"
   sign: true
   # Replicator Compression settings
@@ -43,10 +44,12 @@ optimizer:
   compression_factor: 8
 
 distributed:
-  nproc_per_node: 1
+  # nproc_per_node: 1
+  nproc_per_node: 2
   nnodes: 2
   node_rank: 0
-  master_addr: 10.42.22.19
+  # master_addr: 10.42.22.19
+  master_addr: 10.42.18.68
   master_port: 27501
   standalone: false 
 
@@ -60,6 +63,9 @@ hydra:
     timeout_min: 45
   sweeper:
       params:
-        optimizer.compression_factor: 1,2,4,8,16,32
+        # optimizer.compression_factor: 1,2,4,8,16,32
+        # optimizer.repl: deto-demo, deto-random, deto-full
+        # general.seed: 10,20,30,40,50,60,70,80,90,100
+        optimizer.compression_factor: 1
         optimizer.repl: deto-demo, deto-random, deto-full
-        general.seed: 10,20,30,40,50,60,70,80,90,100
+        general.seed: 10
