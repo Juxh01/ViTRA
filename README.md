@@ -43,7 +43,7 @@ This will:
 
 ## Usage & Experiments
 
-This project utilizes a Makefile to streamline development tasks and experiment execution. The training commands automatically parse Hydra configuration files to configure torchrun for both standalone and distributed environments.
+This project utilizes a Makefile to streamline development tasks and experiment execution. Training commands parse the provided Hydra config to configure `torchrun` for standalone or distributed execution.
 
 ### Development Commands
 
@@ -69,48 +69,52 @@ Training jobs for classification and segmentation can be launched directly via m
 
 #### Classification
 
-To run the default classification experiment defined in `configs/classification.yaml`:
-
+Default config: `configs/classification.yaml`
 ```bash
 make classification
 ```
 
-To run a classification experiment with a custom configuration file (e.g., for a specific cluster node or experimental setup):
-
+Custom config via `CONF_CLS`:
 ```bash
-make classification CONF_CLS=configs/experiments/my_cluster_config.yaml
+make classification CONF_CLS=configs/classification.yaml
 ```
 
 #### Segmentation
 
-To run the default segmentation experiment defined in `configs/segmentation.yaml`:
-
+Default config: `configs/segmentation.yaml`
 ```bash
 make segmentation
 ```
 
-To run a segmentation experiment with a custom configuration file:
-
+Custom config via `CONF_SEG`:
 ```bash
-make segmentation CONF_SEG=configs/experiments/my_segmentation_config.yaml
+make segmentation CONF_SEG=configs/segmentation.yaml
 ```
 
-#### Hyperparameter Sweeps (SMAC)
+#### Ablation sweeps (assumes a working SLURM cluster)
 
-To run the SMAC sweeps for classification and segmentation:
+These ablation runs are launched via Hydra multirun (`-m`) and assume a working SLURM cluster setup. The node and GPU configuration should be specified in the respective YAML config files in the `distributed` section.
 
+- FGVC Aircraft ablation (config: `configs/Classification_FGVGAircraft.yaml`)
 ```bash
-make sweep-classification
-make sweep-segmentation
+make sweep-ablation-fgvc
 ```
-For this to work, a SLURM environment is required.
+
+- SBDataset ablation (classification) (config: `configs/Classification_SBDataset.yaml`)
+```bash
+make sweep-ablation-sb-cls
+```
+
+- SBDataset ablation (segmentation) (config: `configs/Segmentation_SBDataset.yaml`)
+```bash
+make sweep-ablation-sb-seg
+```
 
 ### Distributed Training Configuration
 
-The execution environment relies on a `distributed` section within your YAML configuration files to set up the process group. The Makefile reads these values to construct the launch command.
+The execution environment relies on a `distributed` section within the YAML config. The Makefile reads these values to construct the `torchrun` launch command.
 
-Ensure your configuration files include the necessary keys if you are running in a multi-node environment. Example configuration structure:
-
+Example:
 ```yaml
 distributed:
   nproc_per_node: 2    # GPUs per node
