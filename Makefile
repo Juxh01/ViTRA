@@ -46,13 +46,6 @@ help:
 install:
 	$(PIP) install swig
 	$(PIP) install -e ".[dev]"
-	@mkdir -p .dependencies
-	@if [ ! -d ".dependencies/hydra-smac-sweeper" ]; then \
-		echo ">>> Cloning hydra-smac-sweeper source..."; \
-		git clone https://github.com/automl/hydra-smac-sweeper.git .dependencies/hydra-smac-sweeper; \
-	fi
-	@echo ">>> Re-installing SMAC Sweeper with 'editable_mode=compat'..."
-	$(PIP) install -e .dependencies/hydra-smac-sweeper --config-settings editable_mode=compat
 	$(PRECOMMIT) install
 
 check:
@@ -80,16 +73,6 @@ segmentation:
 	@echo "Starte Segmentation Training mit Config: $(CONF_SEG)"
 	$(eval TORCH_FLAGS := $(shell $(call build_torchrun_cmd,$(CONF_SEG))))
 	$(TORCHRUN) $(TORCH_FLAGS) source/experiments/segmentation.py 
-
-sweep-classification:
-	@echo "Starting SMAC Sweep with SLURM..."
-	$(PYTHON) source/experiments/DeMo_GP_classification.py \
-		-m
-
-sweep-segmentation:
-	@echo "Starting SMAC Sweep with SLURM..."
-	$(PYTHON) source/experiments/DeMo_GP_segmentation.py \
-		-m
 
 sweep-ablation-fgvc:
 	@echo "Starte Ablation Sweep für FGVC Aircraft..."
