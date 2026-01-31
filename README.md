@@ -39,7 +39,6 @@ make install
 This will:
 - Install the project in development mode (including dev dependencies)
 - Install and configure pre-commit hooks for code quality
-- Clone and install the SMAC Hydra sweeper dependency (`hydra-smac-sweeper`) into `.dependencies/`
 
 ## Usage & Experiments
 
